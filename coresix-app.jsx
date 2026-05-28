@@ -202,6 +202,19 @@ const STAGES = [
   { name:"Mastery",   days:[45,999],color:"#EC4899", bg:"#FDF2F8", desc:"This is who you are now." },
 ];
 
+// ── WEEKLY IMPACT ────────────────────────────────────────
+const IMPACT_QUESTIONS = {
+  fuel:    { question:"How did your Fuel habit feel this week?", options:[{emoji:"😴",label:"Struggling"},{emoji:"😐",label:"Same"},{emoji:"😊",label:"Better"},{emoji:"⚡",label:"Much better"}] },
+  move:    { question:"How does your body feel this week?",      options:[{emoji:"😓",label:"Tired"},{emoji:"💪",label:"Solid"},{emoji:"🔥",label:"Stronger"},{emoji:"⭐",label:"Best yet"}] },
+  rest:    { question:"How was your sleep this week?",           options:[{emoji:"😴",label:"Poor"},{emoji:"😐",label:"Fair"},{emoji:"😊",label:"Good"},{emoji:"⭐",label:"Great"}] },
+  calm:    { question:"How stressed did you feel this week?",    options:[{emoji:"🔴",label:"Very stressed"},{emoji:"🟡",label:"Some stress"},{emoji:"🟢",label:"Manageable"},{emoji:"💚",label:"Calm"}] },
+  connect: { question:"How connected did you feel this week?",   options:[{emoji:"😔",label:"Isolated"},{emoji:"😐",label:"Okay"},{emoji:"😊",label:"Connected"},{emoji:"🤝",label:"Thriving"}] },
+  focus:   { question:"How focused were you this week?",         options:[{emoji:"🌀",label:"Scattered"},{emoji:"😐",label:"Okay"},{emoji:"🎯",label:"Focused"},{emoji:"⚡",label:"In flow"}] },
+};
+
+const IMPACT_TRENDS = ["needs focus ↓","consistent →","improving ↑","strong ↑"];
+const IMPACT_LABELS = ["Struggling","Same / Okay","Getting better","Thriving"];
+
 const getStage = s => STAGES.find(st=>s>=st.days[0]&&s<=st.days[1])||STAGES[0];
 const getPillar = id => PILLARS[id];
 const getRand = arr => arr[Math.floor(Math.random()*arr.length)];
@@ -216,6 +229,9 @@ const initState = () => ({
   ladder: Object.fromEntries(PIDS.map(pid=>[pid,{rung:0,days:0,selected:null}])),
   checkedToday: Object.fromEntries(PIDS.map(pid=>[pid,false])),
   streak:0, lastDate:null, history:[], tab:"today",
+  weeklyImpact:{}, impactHistory:[],
+  showWeeklyCheckin:false,
+  selectedPillars:null,  // null = use auto 3 weakest
   coachingRead: {},
   morningIdx:0,
 });
@@ -246,6 +262,9 @@ export default function App() {
   const [visible, setVisible] = useState(true);
   const [confetti, setConfetti] = useState([]);
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:""});
+  const [weeklyStep, setWeeklyStep] = useState(0);
+  const [showChangePillars, setShowChangePillars] = useState(false);
+  const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
   const [lastQPid, setLastQPid] = useState(null);
 
@@ -253,10 +272,24 @@ export default function App() {
 
   useEffect(()=>{
     const today = new Date().toDateString();
+    const dayOfWeek = new Date().getDay(); // 6 = Saturday
     if (st.lastDate && st.lastDate!==today) {
       update({checkedToday:Object.fromEntries(PIDS.map(p=>[p,false]))});
     }
+    // Show weekly check-in on Saturday if not done this week
+    const thisWeek = getWeekKey();
+    const alreadyDone = st.impactHistory?.some(h=>h.week===thisWeek);
+    if (dayOfWeek===6 && !alreadyDone && st.streak>0) {
+      update({showWeeklyCheckin:true});
+    }
   },[]);
+
+  const getWeekKey = () => {
+    const d = new Date();
+    const startOfYear = new Date(d.getFullYear(),0,1);
+    const week = Math.ceil(((d-startOfYear)/86400000+startOfYear.getDay()+1)/7);
+    return `${d.getFullYear()}-W${week}`;
+  };
 
   useEffect(()=>{ saveState(st); },[st]);
 
@@ -281,12 +314,12 @@ export default function App() {
     setShowCoach({title, message, onContinue, ...opts});
   };
 
-  const pids3 = ()=>{
+  const getWeakest3 = () => {
     const scores=st.scores;
     if(!Object.keys(scores).length) return PIDS.slice(0,3);
     return [...PIDS].sort((a,b)=>(scores[a]||3)-(scores[b]||3)).slice(0,3);
   };
-  const activePids = pids3();
+  const activePids = st.selectedPillars || getWeakest3();
   const done3 = activePids.filter(pid=>st.checkedToday[pid]).length;
   const pct = activePids.length ? Math.round((done3/activePids.length)*100) : 0;
 
@@ -436,6 +469,122 @@ export default function App() {
       {confetti.map(c=>(
         <div key={c.id} style={{position:"fixed",left:`${c.x}%`,top:`${c.y}%`,width:c.size,height:c.size,borderRadius:"50%",background:c.color,"--vx":`${c.vx}px`,"--vy":`${c.vy}px`,animation:"confetti 1.4s ease-out forwards",pointerEvents:"none",zIndex:999}}/>
       ))}
+
+      {/* ── WEEKLY CHECK-IN OVERLAY ── */}
+      {st.showWeeklyCheckin && st.screen!=="splash" && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"85vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+            {weeklyStep < activePids.length ? (()=>{
+              const pid = activePids[weeklyStep];
+              const p = PILLARS[pid];
+              const iq = IMPACT_QUESTIONS[pid];
+              return (
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:2,textTransform:"uppercase"}}>Week in review · {weeklyStep+1} of {activePids.length}</div>
+                    <div style={{display:"flex",gap:6}}>
+                      {activePids.map((_,i)=>(
+                        <div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<=weeklyStep?"#10B981":"#e5e5e5",transition:"all 0.3s"}}/>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{textAlign:"center",marginBottom:24}}>
+                    <div style={{width:60,height:60,borderRadius:18,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 14px",boxShadow:`0 6px 20px ${p.color}44`}}>{p.emoji}</div>
+                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:6}}>{p.name}</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:"#555",lineHeight:1.5}}>{iq.question}</p>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+                    {iq.options.map((opt,i)=>(
+                      <button key={i} className="tap" onClick={()=>{
+                        const newAnswers = {...weeklyAnswers,[pid]:i};
+                        setWeeklyAnswers(newAnswers);
+                        if (weeklyStep+1 >= activePids.length) {
+                          // Save and show summary
+                          const week = getWeekKey();
+                          const newImpact = {...st.weeklyImpact,...newAnswers};
+                          const newHistory = [...(st.impactHistory||[]),{week,answers:newAnswers,date:new Date().toLocaleDateString("en",{month:"short",day:"numeric"}),streak:st.streak}];
+                          update({weeklyImpact:newImpact,impactHistory:newHistory.slice(-12),showWeeklyCheckin:false});
+                          setWeeklyStep(0);
+                          setWeeklyAnswers({});
+                          goTo("weekly_summary");
+                        } else {
+                          setWeeklyStep(s=>s+1);
+                        }
+                      }} style={{padding:"16px 12px",borderRadius:16,border:`1.5px solid ${weeklyAnswers[pid]===i?p.color:"#f0f0f0"}`,background:weeklyAnswers[pid]===i?p.light:"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"all 0.2s",boxShadow:weeklyAnswers[pid]===i?`0 4px 16px ${p.color}22`:"none"}}>
+                        <span style={{fontSize:26}}>{opt.emoji}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:weeklyAnswers[pid]===i?p.color:"#555",textAlign:"center",lineHeight:1.3}}>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button className="tap" onClick={()=>{update({showWeeklyCheckin:false});setWeeklyStep(0);setWeeklyAnswers({});}} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                    Skip this week
+                  </button>
+                </div>
+              );
+            })() : null}
+          </div>
+        </div>
+      )}
+
+      {/* ── CHANGE PILLARS OVERLAY ── */}
+      {showChangePillars && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}} onClick={e=>{if(e.target===e.currentTarget)setShowChangePillars(false)}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Change Today's Pillars</h3>
+              <button onClick={()=>setShowChangePillars(false)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#aaa"}}>✕</button>
+            </div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginBottom:20,lineHeight:1.5}}>Pick exactly 3 pillars to focus on today. CoreSix recommends your 3 weakest — but you know your day best.</p>
+
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {PIDS.map(pid=>{
+                const p=PILLARS[pid];
+                const ladder=st.ladder[pid];
+                const isSelected=(st.selectedPillars||getWeakest3()).includes(pid);
+                const isWeakest=getWeakest3().includes(pid);
+                const current=st.selectedPillars||getWeakest3();
+                return (
+                  <button key={pid} className="tap" onClick={()=>{
+                    let next;
+                    if (isSelected) {
+                      if (current.length<=1) return; // must keep at least 1
+                      next = current.filter(p=>p!==pid);
+                    } else {
+                      if (current.length>=3) {
+                        next = [...current.slice(1),pid]; // replace oldest
+                      } else {
+                        next = [...current,pid];
+                      }
+                    }
+                    update({selectedPillars:next});
+                  }} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${isSelected?p.color:"#f0f0f0"}`,background:isSelected?p.light:"white",cursor:"pointer",transition:"all 0.2s",textAlign:"left"}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:isSelected?p.grad:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,transition:"all 0.2s"}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:isSelected?p.color:"#0f0f0f"}}>{p.name}</span>
+                        {isWeakest&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>Recommended</span>}
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginTop:2}}>Rung {ladder.rung+1}/5 · {ladder.days} days on this habit</div>
+                    </div>
+                    <div style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${isSelected?p.color:"#ddd"}`,background:isSelected?p.color:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.2s"}}>
+                      {isSelected&&<div style={{width:8,height:8,borderRadius:"50%",background:"white"}}/>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{display:"flex",gap:10}}>
+              <button className="tap" onClick={()=>{update({selectedPillars:null});setShowChangePillars(false);}} style={{flex:1,padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"white",color:"#666",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Reset to recommended
+              </button>
+              <button className="tap" onClick={()=>setShowChangePillars(false)} style={{flex:2,padding:"13px",borderRadius:14,border:"none",background:"#0f0f0f",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                Confirm →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── COACHING OVERLAY ── */}
       {showCoach && (
@@ -605,12 +754,17 @@ export default function App() {
                 <div style={S.badge()}>Day {st.streak+1}</div>
                 <h2 style={S.h2}>Today's habits</h2>
               </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
+                <button className="tap" onClick={()=>setShowChangePillars(true)} style={{background:"white",border:"1.5px solid #e8e8e8",borderRadius:12,padding:"7px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#666",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  <span>⚙️</span> Change
+                </button>
               <div style={{position:"relative",width:60,height:60}}>
                 <svg width="60" height="60" viewBox="0 0 60 60">
                   <circle cx="30" cy="30" r="24" fill="none" stroke="#f0f0f0" strokeWidth="4.5"/>
                   <circle cx="30" cy="30" r="24" fill="none" stroke="#10B981" strokeWidth="4.5" strokeDasharray={`${150.8*pct/100} 150.8`} strokeLinecap="round" transform="rotate(-90 30 30)" style={{transition:"stroke-dasharray 0.5s ease"}}/>
                 </svg>
                 <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>{pct}%</div>
+              </div>
               </div>
             </div>
 
@@ -734,8 +888,76 @@ export default function App() {
           </div>
         )}
 
+        {/* ── WEEKLY SUMMARY ── */}
+        {st.screen==="weekly_summary"&&(
+          <div className="fu" style={S.page}>
+            <div style={{textAlign:"center",paddingTop:8}}>
+              <div style={{fontSize:48,marginBottom:12}}>📊</div>
+              <h2 style={S.h1}>Your week in CoreSix</h2>
+              <p style={S.sub}>Here is the real impact your habits had this week.</p>
+            </div>
+
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {activePids.map(pid=>{
+                const p=PILLARS[pid];
+                const answer=st.weeklyImpact?.[pid]??null;
+                const iq=IMPACT_QUESTIONS[pid];
+                const opt=answer!==null?iq.options[answer]:null;
+                const days=st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length;
+                const trend=IMPACT_TRENDS[answer??0];
+                return (
+                  <div key={pid} style={{...S.card,border:`1.5px solid ${answer>=2?p.border:"#f0f0f0"}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                      <div style={{width:42,height:42,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{days}/7 days · {trend}</div>
+                      </div>
+                      {opt&&<div style={{textAlign:"center"}}>
+                        <div style={{fontSize:22}}>{opt.emoji}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:p.color,fontWeight:600,marginTop:2}}>{opt.label}</div>
+                      </div>}
+                    </div>
+                    <div style={{background:"#f5f5f5",borderRadius:6,height:5,overflow:"hidden"}}>
+                      <div style={{height:"100%",borderRadius:6,background:p.grad,width:`${(days/7)*100}%`,transition:"width 0.8s ease"}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Coach insight */}
+            {(()=>{
+              const scores = activePids.map(pid=>({pid,score:st.weeklyImpact?.[pid]??0,days:st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length}));
+              const best = scores.sort((a,b)=>b.score-a.score)[0];
+              const worst = scores.sort((a,b)=>a.score-b.score)[0];
+              const bestP = PILLARS[best?.pid];
+              const worstP = PILLARS[worst?.pid];
+              return (
+                <div style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",borderRadius:18,padding:"20px",border:"1px solid #DDD6FE"}}>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f",marginBottom:10}}>Your habits are working.</div>
+                  {bestP&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7,marginBottom:8}}>
+                    {bestP.emoji} <strong>{bestP.name}</strong> is your biggest win this week. Keep building on this momentum.
+                  </p>}
+                  {worstP&&worstP.pid!==best?.pid&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
+                    {worstP.emoji} <strong>{worstP.name}</strong> needs the most attention next week. One tiny habit at a time.
+                  </p>}
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#8B5CF6",marginTop:10,lineHeight:1.6,fontStyle:"italic"}}>
+                    "Trust the work when the results hide. Growth is often invisible before it's visible."
+                  </p>
+                </div>
+              );
+            })()}
+
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
+              <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Full Dashboard</button>
+            </div>
+          </div>
+        )}
+
         {/* ── DASHBOARD ── */}
-        {st.screen==="dashboard"&&(
+        {st.screen==="dashboard"&&(&&(
           <div className="fu" style={{...S.page,paddingBottom:90}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
@@ -749,7 +971,7 @@ export default function App() {
             </div>
 
             <div style={{display:"flex",gap:4,background:"white",borderRadius:14,padding:4,border:"1.5px solid #f0f0f0",boxShadow:"0 2px 8px #0001"}}>
-              {["today","pillars","history"].map(t=>(
+              {["today","pillars","history","impact"].map(t=>(
                 <button key={t} onClick={()=>update({tab:t})} style={{flex:1,padding:"10px",borderRadius:10,border:"none",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize",transition:"all 0.2s",background:st.tab===t?"#0f0f0f":"transparent",color:st.tab===t?"white":"#aaa",boxShadow:st.tab===t?"0 4px 12px #0003":"none"}}>
                   {t.charAt(0).toUpperCase()+t.slice(1)}
                 </button>
@@ -805,6 +1027,46 @@ export default function App() {
                   </div>;
                 })}
                 <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={{...S.btnGhost,marginTop:4}}>Re-take Assessment</button>
+              </div>
+            )}
+
+            {st.tab==="impact"&&(
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <button className="tap" onClick={()=>update({showWeeklyCheckin:true,tab:"today"})} style={S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 8px 24px #8B5CF644")}>
+                  📊 Take This Week's Check-in
+                </button>
+                {!st.impactHistory?.length ? (
+                  <div style={{textAlign:"center",padding:"48px 20px"}}>
+                    <div style={{fontSize:44,marginBottom:12}}>📈</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#bbb",fontSize:14,lineHeight:1.7}}>No impact data yet.<br/>Your first weekly check-in appears every Saturday.</p>
+                  </div>
+                ):[...st.impactHistory].reverse().map((entry,i)=>(
+                  <div key={i} style={S.card}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>Week of {entry.date}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#10B981",fontWeight:600}}>🔥 {entry.streak} streak</div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {Object.entries(entry.answers).map(([pid,ans])=>{
+                        const p=PILLARS[pid];
+                        const iq=IMPACT_QUESTIONS[pid];
+                        const opt=iq?.options[ans];
+                        if (!p||!opt) return null;
+                        return (
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:10}}>
+                            <span style={{fontSize:16}}>{p.emoji}</span>
+                            <div style={{flex:1}}>
+                              <div style={{background:"#f5f5f5",borderRadius:4,height:4,overflow:"hidden"}}>
+                                <div style={{height:"100%",borderRadius:4,background:p.grad,width:`${((ans+1)/4)*100}%`}}/>
+                              </div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:600,width:70,textAlign:"right"}}>{opt.emoji} {opt.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
