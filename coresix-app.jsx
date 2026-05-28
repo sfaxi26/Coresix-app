@@ -57,7 +57,7 @@ const COACHING = {
   // Rung coaching — shown before picking a habit
   rung_coaching: {
     fuel: [
-      "Rung 1 is about one thing: creating a water anchor. Hydration is the foundation of every other nutrition habit. When you're properly hydrated, your hunger signals become clearer, your cravings reduce, and your energy stabilises.\n\nThe science: people who drink water before meals consume 13% fewer calories. But we're not starting there. We're starting with one glass, at one specific moment, every day.",
+      "Rung 1 is about one thing: creating a foundation. Hydration and structured meal timing are the two pillars of nutrition. When you eat 2-3 structured meals and stay hydrated, your hunger signals become clearer, your cravings reduce, and your energy stabilises throughout the day.\n\nThe science: people who eat structured meals rather than grazing have better insulin sensitivity, lower body fat, and more consistent energy. Start with one anchor — water before your first meal, or committing to 3 meals today.",
       "Rung 2 is about how you eat, not what you eat. Research shows that eating mindfully — slowly, without screens, paying attention — naturally reduces overeating, improves digestion, and builds a healthier relationship with food.\n\nThis is harder than it sounds in our distracted world. One mindful meal a day is the target.",
       "Rung 3 is about nutrition quality. Protein is the most important macronutrient for body composition, satiety, and muscle maintenance. Most people eat far less than they need.\n\nWe're not counting calories. We're adding one good thing at a time — vegetables, protein, whole foods. Addition, not restriction.",
       "Rung 4 is about planning. Research consistently shows that people who plan their meals make healthier choices, spend less money, and stick to their nutrition goals at dramatically higher rates.\n\n5 minutes of planning tonight saves hours of poor decisions tomorrow.",
@@ -139,11 +139,11 @@ const COACHING = {
 // ── LADDER ───────────────────────────────────────────────
 const LADDER = {
   fuel: [
-    { title:"Foundation — Hydration", options:["Drink a full glass of water before my first coffee every morning","Drink 8 glasses of water spread throughout the day","Drink a glass of water before every meal","Replace one sugary drink with water every day","Start my day with 500ml of water before anything else","Drink water every time I feel hungry between meals"] },
-    { title:"Mindful Eating", options:["Eat breakfast sitting down with no phone or screens","Chew slowly and put my fork down between every bite","Eat one meal a day with no distractions at all","Stop eating when I feel 80% full — not stuffed","Sit at a table for every meal today","Take 3 deep breaths before eating my first meal"] },
-    { title:"Protein & Nutrients", options:["Add a source of protein to every meal today","Include one vegetable or salad with lunch and dinner","Replace one processed snack with whole food today","Cook at home for at least one meal today","Add one handful of nuts or seeds to my day","Eat at least 3 different coloured vegetables today"] },
-    { title:"Meal Planning", options:["Plan tomorrow's meals before I go to bed tonight","Prep one healthy meal or snack in advance this week","Write a grocery list based on healthy meals before shopping","Batch cook one thing on the weekend for the week","Pack a healthy lunch the night before work","Decide what I'm eating tomorrow morning before I sleep"] },
-    { title:"Nutrition Mastery", options:["Eat whole foods for every meal today — nothing ultra-processed","Track my protein intake and hit my daily target","Eat the rainbow — 6 different coloured plants today","Follow my meal plan exactly as I designed it today","Eat every 3-4 hours to keep energy and blood sugar stable","Cook every meal from scratch today"] },
+    { title:"Foundation — Hydration", options:["Drink a full glass of water before my first coffee every morning","Drink 8 glasses of water spread throughout the day","Drink a glass of water before every meal","Replace one sugary drink with water every day","Start my day with 500ml of water before anything else","Eat 3 structured meals today — breakfast, lunch and dinner — no skipping"] },
+    { title:"Mindful Eating", options:["Eat breakfast sitting down with no phone or screens","Chew slowly and put my fork down between every bite","Eat 2-3 structured meals today with no snacking between them","Stop eating when I feel 80% full — not stuffed","Sit at a table for every meal today — no desk, no sofa","Take 3 deep breaths before eating my first meal"] },
+    { title:"Protein & Nutrients", options:["Add a source of protein to every meal today","Include one vegetable or salad with lunch and dinner","Eat exactly 3 meals today — protein, vegetables and complex carbs in each","Cook at home for at least one meal today","Eat 2 meals today with a 5-6 hour gap between them","Eat at least 3 different coloured vegetables across my meals today"] },
+    { title:"Meal Planning", options:["Plan my 3 meals for tomorrow — times and what I will eat — before bed","Prep all 3 meals for tomorrow in one 20-minute session tonight","Write a grocery list for a full week of 2-3 meals per day","Batch cook protein and vegetables on the weekend for the week","Set fixed meal times for tomorrow — breakfast, lunch, dinner — and stick to them","Plan exactly 2 meals for tomorrow and eat nothing in between"] },
+    { title:"Nutrition Mastery", options:["Eat whole foods for every meal today — nothing ultra-processed","Eat exactly 2-3 balanced meals today with no eating outside those windows","Track my protein intake across my 2-3 meals and hit my daily target","Follow my meal plan exactly — right foods, right times, right portions","Cook every meal from scratch today — breakfast, lunch and dinner","Eat the rainbow across my meals — 6 different coloured plants today"] },
   ],
   move: [
     { title:"Foundation — Just Start", options:["Do 5 push-ups before stepping into the shower","Do 10 jumping jacks the moment my alarm goes off","Walk to the end of the street and back before breakfast","Do 10 calf raises while brushing my teeth","Stretch my arms above my head for 60 seconds after waking","March in place for 2 minutes while my kettle boils"] },
@@ -298,6 +298,19 @@ export default function App() {
   },[]);
 
   const update = patch => setSt(prev=>({...prev,...patch}));
+
+  const resetApp = () => {
+    if (window.confirm("Reset CoreSix? This will clear all your progress, streak and history.")) {
+      localStorage.removeItem(SAVE_KEY);
+      setSt(initState());
+      setShowCoach(null);
+      setShowChangePillars(false);
+      setWriteOwn({show:false,pid:null,val:""});
+      setWeeklyStep(0);
+      setWeeklyAnswers({});
+      setTimeout(()=>goTo("welcome"), 100);
+    }
+  };
 
   const goTo = screen => {
     setVisible(false);
@@ -608,7 +621,37 @@ export default function App() {
 
       <div style={{width:"100%",maxWidth:430,margin:"0 auto",minHeight:"100vh",opacity:visible?1:0,transform:visible?"translateY(0)":"translateY(14px)",transition:"all 0.26s cubic-bezier(0.16,1,0.3,1)"}}>
 
-        {/* ── SPLASH ── */}
+        {/* ── SETTINGS ── */}
+      {st.screen==="settings"&&(
+        <div className="fu" style={S.page}>
+          <h2 style={S.h1}>Settings</h2>
+
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div style={S.card}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",marginBottom:4}}>Your Profile</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",marginBottom:14}}>Name: {st.name} · Streak: {st.streak} days</div>
+              <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={S.btn()}>📋 Re-take Assessment</button>
+            </div>
+
+            <div style={{...S.card,border:"1.5px solid #fee2e2"}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#ef4444",marginBottom:4}}>Danger Zone</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",marginBottom:14}}>This will permanently delete all your progress, streak, history and habit selections.</div>
+              <button className="tap" onClick={resetApp} style={{...S.btn("linear-gradient(135deg,#ef4444,#f87171)","0 8px 24px #ef444433")}}>🔄 Reset Everything & Start Over</button>
+            </div>
+
+            <div style={S.card}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",marginBottom:4}}>About CoreSix</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.7}}>CoreSix is a wellness app, not a medical tool. Always consult your doctor for medical advice.
+
+Built on research by BJ Fogg, James Clear, and behavioural science.</div>
+            </div>
+          </div>
+
+          <button className="tap" onClick={()=>goTo("habits")} style={S.btnGhost}>← Back</button>
+        </div>
+      )}
+
+      {/* ── SPLASH ── */}
         {st.screen==="splash"&&(
           <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14}}>
             <div style={{fontSize:60,animation:"floatSlow 3s ease-in-out infinite"}}>✦</div>
@@ -816,7 +859,10 @@ export default function App() {
               })}
             </div>
 
-            <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Dashboard</button>
+            <div style={{display:"flex",gap:10}}>
+              <button className="tap" onClick={()=>goTo("dashboard")} style={{...S.btnGhost,flex:3}}>View Dashboard</button>
+              <button className="tap" onClick={()=>goTo("settings")} style={{...S.btnGhost,flex:1,fontSize:18,padding:"14px 10px"}}>⚙️</button>
+            </div>
           </div>
         )}
 
@@ -883,7 +929,10 @@ export default function App() {
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:320}}>
               <button className="tap" onClick={()=>{update({checkedToday:Object.fromEntries(PIDS.map(p=>[p,false]))});goTo("habits");}} style={S.btn()}>Tomorrow's Habits →</button>
-              <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Dashboard</button>
+              <div style={{display:"flex",gap:10}}>
+              <button className="tap" onClick={()=>goTo("dashboard")} style={{...S.btnGhost,flex:3}}>View Dashboard</button>
+              <button className="tap" onClick={()=>goTo("settings")} style={{...S.btnGhost,flex:1,fontSize:18,padding:"14px 10px"}}>⚙️</button>
+            </div>
             </div>
           </div>
         )}
@@ -957,16 +1006,21 @@ export default function App() {
         )}
 
         {/* ── DASHBOARD ── */}
-        {st.screen==="dashboard"&&(&&(
+        {st.screen==="dashboard"&&(
           <div className="fu" style={{...S.page,paddingBottom:90}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div>
                 <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginBottom:2}}>Good day,</p>
                 <h2 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:30,color:"#0f0f0f",letterSpacing:-0.5}}>{st.name}</h2>
               </div>
-              <div style={{...S.card,textAlign:"center",padding:"12px 16px"}}>
-                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:30,color:"#0f0f0f",lineHeight:1}}>{st.streak}</div>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",letterSpacing:2,textTransform:"uppercase",marginTop:2}}>streak 🔥</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end"}}>
+                <div style={{...S.card,textAlign:"center",padding:"12px 16px"}}>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:30,color:"#0f0f0f",lineHeight:1}}>{st.streak}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",letterSpacing:2,textTransform:"uppercase",marginTop:2}}>streak 🔥</div>
+                </div>
+                <button className="tap" onClick={resetApp} style={{background:"white",border:"1.5px solid #fee2e2",borderRadius:10,padding:"6px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#ef4444",cursor:"pointer"}}>
+                  🔄 Restart
+                </button>
               </div>
             </div>
 
@@ -1026,7 +1080,10 @@ export default function App() {
                     {ladder.selected&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#888",marginTop:10,lineHeight:1.5,fontStyle:"italic"}}>"{ladder.selected}"</p>}
                   </div>;
                 })}
-                <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={{...S.btnGhost,marginTop:4}}>Re-take Assessment</button>
+                <div style={{display:"flex",gap:10,marginTop:4}}>
+                  <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={{...S.btnGhost,flex:2}}>📋 Re-take Assessment</button>
+                  <button className="tap" onClick={resetApp} style={{flex:1,padding:"14px",borderRadius:14,border:"1.5px solid #fee2e2",background:"white",color:"#ef4444",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Reset</button>
+                </div>
               </div>
             )}
 
