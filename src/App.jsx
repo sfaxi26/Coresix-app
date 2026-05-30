@@ -361,7 +361,7 @@ const IMPACT_QUESTIONS = {
   focus:   { question:"How focused were you this week?",         options:[{emoji:"🌀",label:"Scattered"},{emoji:"😐",label:"Okay"},{emoji:"🎯",label:"Focused"},{emoji:"⚡",label:"In flow"}] },
 };
 
-const IMPACT_TRENDS = ["needs focus ↓","consistent →","improving ↑","strong ↑"];
+const IMPACT_TRENDS = ["needs attention ↓","same →","getting better ↑","strong ↑"];
 const IMPACT_LABELS = ["Struggling","Same / Okay","Getting better","Thriving"];
 
 const getStage = s => STAGES.find(st=>s>=st.days[0]&&s<=st.days[1])||STAGES[0];
@@ -1412,7 +1412,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                 const iq=IMPACT_QUESTIONS[pid];
                 const opt=answer!==null?iq.options[answer]:null;
                 const days=st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length;
-                const trend=IMPACT_TRENDS[answer??0];
+                const trend=answer!==null ? IMPACT_TRENDS[Math.min(answer,3)] : "not rated";
                 return (
                   <div key={pid} style={{...S.card,border:`1.5px solid ${answer>=2?p.border:"#f0f0f0"}`}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
@@ -1436,22 +1436,39 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
 
             {/* Coach insight */}
             {(()=>{
-              const scores = activePids.map(pid=>({pid,score:st.weeklyImpact?.[pid]??0,days:st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length}));
-              const best = scores.sort((a,b)=>b.score-a.score)[0];
-              const worst = scores.sort((a,b)=>a.score-b.score)[0];
-              const bestP = PILLARS[best?.pid];
-              const worstP = PILLARS[worst?.pid];
+              // Sort by impact score — make separate copies to avoid mutation bug
+              const scoreList = activePids.map(pid=>({
+                pid,
+                score: st.weeklyImpact?.[pid] ?? -1,
+                days: st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length
+              }));
+              const sortedByBest  = [...scoreList].sort((a,b)=>b.score-a.score);
+              const sortedByWorst = [...scoreList].sort((a,b)=>a.score-b.score);
+              const best  = sortedByBest[0];
+              const worst = sortedByWorst[0];
+              const bestP  = best  ? PILLARS[best.pid]  : null;
+              const worstP = worst ? PILLARS[worst.pid] : null;
+              const different = best?.pid !== worst?.pid;
               return (
                 <div style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",borderRadius:18,padding:"20px",border:"1px solid #DDD6FE"}}>
                   <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f",marginBottom:10}}>Your habits are working.</div>
-                  {bestP&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7,marginBottom:8}}>
-                    {bestP.emoji} <strong>{bestP.name}</strong> is your biggest win this week. Keep building on this momentum.
-                  </p>}
-                  {worstP&&worstP.pid!==best?.pid&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
-                    {worstP.emoji} <strong>{worstP.name}</strong> needs the most attention next week. One tiny habit at a time.
-                  </p>}
+                  {bestP && best.score >= 0 && (
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7,marginBottom:8}}>
+                      {bestP.emoji} <strong>{bestP.name}</strong> is your biggest win this week. Keep building on this momentum.
+                    </p>
+                  )}
+                  {worstP && different && worst.score >= 0 && worst.score < 2 && (
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
+                      {worstP.emoji} <strong>{worstP.name}</strong> needs the most attention next week. One tiny habit at a time.
+                    </p>
+                  )}
+                  {(!best || best.score < 0) && (
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
+                      Every check-in this week built something real. Keep showing up.
+                    </p>
+                  )}
                   <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#8B5CF6",marginTop:10,lineHeight:1.6,fontStyle:"italic"}}>
-                    "Trust the work when the results hide. Growth is often invisible before it's visible."
+                    "Trust the work when the results hide. Growth is often invisible before it is visible."
                   </p>
                 </div>
               );
