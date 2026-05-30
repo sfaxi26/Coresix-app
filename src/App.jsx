@@ -421,7 +421,7 @@ const getRand = arr => arr[Math.floor(Math.random()*arr.length)];
 
 const SAVE_KEY = "coresix_v2";
 const DEVICE_ID = getDeviceId();
-const loadState = () => { try { const d=localStorage.getItem(SAVE_KEY); return d?JSON.parse(d):null; } catch { return null; } };
+const loadState = () => { try { const d=localStorage.getItem(SAVE_KEY); return d?migrateState(JSON.parse(d)):null; } catch { return null; } };
 const saveState = s => { try { localStorage.setItem(SAVE_KEY,JSON.stringify(s)); } catch {} };
 
 const initState = () => ({
@@ -432,10 +432,32 @@ const initState = () => ({
   streak:0, lastDate:null, history:[], tab:"today",
   weeklyImpact:{}, impactHistory:[],
   showWeeklyCheckin:false,
-  selectedPillars:null,  // null = use auto 3 weakest
+  selectedPillars:null,
   coachingRead: {},
   morningIdx:0,
+  fuel:{
+    setup:false, weight:"", heightCm:"", age:"", sex:"male",
+    goal:"maintain", activity:"moderate",
+    targets:{calories:2000,protein:150,carbs:200,fat:67,fiber:28},
+    meals:[], waterGlasses:0, waterDate:"",
+  },
 });
+
+// Migrate old state — add fuel if missing
+const migrateState = (s) => {
+  if (!s) return s;
+  if (!s.fuel) {
+    s.fuel = {
+      setup:false, weight:"", heightCm:"", age:"", sex:"male",
+      goal:"maintain", activity:"moderate",
+      targets:{calories:2000,protein:150,carbs:200,fat:67,fiber:28},
+      meals:[], waterGlasses:0, waterDate:"",
+    };
+  }
+  if (!s.fuel.targets) s.fuel.targets = {calories:2000,protein:150,carbs:200,fat:67,fiber:28};
+  if (s.fuel.targets && !s.fuel.targets.fiber) s.fuel.targets.fiber = 28;
+  return s;
+};
 
 // ── COACHING CARD COMPONENT ───────────────────────────────
 function CoachCard({ icon, title, message, color="#6D28D9", bg="linear-gradient(135deg,#F5F3FF,#EFF6FF)", border="#DDD6FE", onContinue, continueLabel="Continue →" }) {
@@ -783,7 +805,6 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
   );
 
   // ── DASHBOARD ──
-  const habitAnalysis = analyzeFuelHabit();
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       {/* Header */}
@@ -798,20 +819,23 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
       </div>
 
       {/* Today's Fuel habit connection */}
-      {fuelHabit && (
-        <div style={{background:habitAnalysis?.met?"linear-gradient(135deg,#ECFDF5,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${habitAnalysis?.met?"#A7F3D0":"#FDE68A"}`}}>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Fuel Habit</div>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{fuelHabit}"</div>
-          {habitAnalysis && (
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:16}}>{habitAnalysis.met?"✅":"🎯"}</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:habitAnalysis.met?"#10B981":"#F59E0B",fontWeight:600}}>
-                {habitAnalysis.actual} — {habitAnalysis.met ? "Habit goal met!" : `Goal: ${habitAnalysis.goal}`}
+      {fuelHabit && (()=>{
+        const ha = analyzeFuelHabit();
+        return (
+          <div style={{background:ha?.met?"linear-gradient(135deg,#ECFDF5,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#A7F3D0":"#FDE68A"}`}}>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Fuel Habit</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{fuelHabit}"</div>
+            {ha && (
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#10B981":"#F59E0B",fontWeight:600}}>
+                  {ha.actual} — {ha.met ? "Habit goal met!" : `Goal: ${ha.goal}`}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* Calories ring */}
       <div style={{...S.card,display:"flex",alignItems:"center",gap:16,border:"1.5px solid #FDE68A"}}>
