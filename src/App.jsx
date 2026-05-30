@@ -481,7 +481,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
   }), {cal:0,protein:0,carbs:0,fat:0,fiber:0});
 
   // Water tracking
-  const waterToday = fuel.waterDate===today ? (fuel.waterGlasses||0) : 0;
+  const waterToday = fuel.waterDate===today && fuel.waterDate ? (fuel.waterGlasses||0) : 0;
 
   const addMeal = (meal) => {
     const newMeals = [...(fuel.meals||[]), {...meal, date:today, time:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}];
@@ -1061,14 +1061,14 @@ export default function App() {
     const today = new Date().toDateString();
     const dayOfWeek = new Date().getDay(); // 6 = Saturday
     if (st.lastDate && st.lastDate!==today) {
-      // New day — reset check-ins and meal log
+      // New day — reset check-ins, meal log and water
       update({
         checkedToday: Object.fromEntries(PIDS.map(p=>[p,false])),
         fuel: {
           ...st.fuel,
-          meals: (st.fuel?.meals||[]).filter(m=>m.date===today), // keep only today
+          meals: (st.fuel?.meals||[]).filter(m=>m.date===today),
           waterGlasses: 0,
-          waterDate: today,
+          waterDate: "",  // empty so waterToday = 0
         }
       });
     }
