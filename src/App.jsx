@@ -309,29 +309,31 @@ const calculateMacros = (weight, heightCm, age, sex, goal, activity) => {
   const fat     = Math.round((calories * 0.25) / 9);
   const carbs   = Math.round((calories - protein * 4 - fat * 9) / 4);
 
-  return { calories, protein, carbs, fat, bmr: Math.round(bmr), tdee: Math.round(tdee) };
+  // Fiber target — 14g per 1000 kcal (dietary guidelines)
+  const fiber = Math.round((calories / 1000) * 14);
+  return { calories, protein, carbs, fat, fiber, bmr: Math.round(bmr), tdee: Math.round(tdee) };
 };
 
 // Meal nutrition estimates (per 100g or per unit)
 const MEAL_PRESETS = [
-  { name:"Grilled chicken breast", emoji:"🍗", cal:165, protein:31, carbs:0,  fat:4,  unit:"100g" },
-  { name:"Brown rice (cooked)",     emoji:"🍚", cal:112, protein:2,  carbs:24, fat:1,  unit:"100g" },
-  { name:"Broccoli",                emoji:"🥦", cal:34,  protein:3,  carbs:7,  fat:0,  unit:"100g" },
-  { name:"Whole egg",               emoji:"🥚", cal:78,  protein:6,  carbs:1,  fat:5,  unit:"1 egg" },
-  { name:"Oats",                    emoji:"🥣", cal:389, protein:17, carbs:66, fat:7,  unit:"100g" },
-  { name:"Banana",                  emoji:"🍌", cal:89,  protein:1,  carbs:23, fat:0,  unit:"1 medium" },
-  { name:"Salmon fillet",           emoji:"🐟", cal:208, protein:20, carbs:0,  fat:13, unit:"100g" },
-  { name:"Greek yogurt",            emoji:"🥛", cal:59,  protein:10, carbs:4,  fat:0,  unit:"100g" },
-  { name:"Almonds",                 emoji:"🌰", cal:164, protein:6,  carbs:6,  fat:14, unit:"28g handful" },
-  { name:"Sweet potato",            emoji:"🍠", cal:86,  protein:2,  carbs:20, fat:0,  unit:"100g" },
-  { name:"Lentils (cooked)",        emoji:"🫘", cal:116, protein:9,  carbs:20, fat:1,  unit:"100g" },
-  { name:"Olive oil",               emoji:"🫒", cal:119, protein:0,  carbs:0,  fat:14, unit:"1 tbsp" },
-  { name:"Whole wheat bread",       emoji:"🍞", cal:69,  protein:4,  carbs:12, fat:1,  unit:"1 slice" },
-  { name:"Tuna (canned)",           emoji:"🐠", cal:132, protein:29, carbs:0,  fat:1,  unit:"100g" },
-  { name:"Apple",                   emoji:"🍎", cal:52,  protein:0,  carbs:14, fat:0,  unit:"1 medium" },
-  { name:"Cottage cheese",          emoji:"🧀", cal:98,  protein:11, carbs:3,  fat:4,  unit:"100g" },
-  { name:"Quinoa (cooked)",         emoji:"🌾", cal:120, protein:4,  carbs:21, fat:2,  unit:"100g" },
-  { name:"Avocado",                 emoji:"🥑", cal:160, protein:2,  carbs:9,  fat:15, unit:"half" },
+  { name:"Grilled chicken breast", emoji:"🍗", cal:165, protein:31, carbs:0,  fat:4,  fiber:0,  unit:"100g" },
+  { name:"Brown rice (cooked)",     emoji:"🍚", cal:112, protein:2,  carbs:24, fat:1,  fiber:2,  unit:"100g" },
+  { name:"Broccoli",                emoji:"🥦", cal:34,  protein:3,  carbs:7,  fat:0,  fiber:3,  unit:"100g" },
+  { name:"Whole egg",               emoji:"🥚", cal:78,  protein:6,  carbs:1,  fat:5,  fiber:0,  unit:"1 egg" },
+  { name:"Oats",                    emoji:"🥣", cal:389, protein:17, carbs:66, fat:7,  fiber:10, unit:"100g" },
+  { name:"Banana",                  emoji:"🍌", cal:89,  protein:1,  carbs:23, fat:0,  fiber:3,  unit:"1 medium" },
+  { name:"Salmon fillet",           emoji:"🐟", cal:208, protein:20, carbs:0,  fat:13, fiber:0,  unit:"100g" },
+  { name:"Greek yogurt",            emoji:"🥛", cal:59,  protein:10, carbs:4,  fat:0,  fiber:0,  unit:"100g" },
+  { name:"Almonds",                 emoji:"🌰", cal:164, protein:6,  carbs:6,  fat:14, fiber:4,  unit:"28g handful" },
+  { name:"Sweet potato",            emoji:"🍠", cal:86,  protein:2,  carbs:20, fat:0,  fiber:3,  unit:"100g" },
+  { name:"Lentils (cooked)",        emoji:"🫘", cal:116, protein:9,  carbs:20, fat:1,  fiber:8,  unit:"100g" },
+  { name:"Olive oil",               emoji:"🫒", cal:119, protein:0,  carbs:0,  fat:14, fiber:0,  unit:"1 tbsp" },
+  { name:"Whole wheat bread",       emoji:"🍞", cal:69,  protein:4,  carbs:12, fat:1,  fiber:2,  unit:"1 slice" },
+  { name:"Tuna (canned)",           emoji:"🐠", cal:132, protein:29, carbs:0,  fat:1,  fiber:0,  unit:"100g" },
+  { name:"Apple",                   emoji:"🍎", cal:52,  protein:0,  carbs:14, fat:0,  fiber:4,  unit:"1 medium" },
+  { name:"Cottage cheese",          emoji:"🧀", cal:98,  protein:11, carbs:3,  fat:4,  fiber:0,  unit:"100g" },
+  { name:"Quinoa (cooked)",         emoji:"🌾", cal:120, protein:4,  carbs:21, fat:2,  fiber:3,  unit:"100g" },
+  { name:"Avocado",                 emoji:"🥑", cal:160, protein:2,  carbs:9,  fat:15, fiber:7,  unit:"half" },
 ];
 
 // ── LADDER ───────────────────────────────────────────────
@@ -462,10 +464,10 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
   const [logSearch, setLogSearch] = useState("");
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoResult, setPhotoResult] = useState(null);
-  const [customMeal, setCustomMeal] = useState({name:"",cal:"",protein:"",carbs:"",fat:""});
+  const [customMeal, setCustomMeal] = useState({name:"",cal:"",protein:"",carbs:"",fat:"",fiber:""});
 
   const fuel = st.fuel || {};
-  const targets = fuel.targets || {calories:2000,protein:150,carbs:200,fat:67};
+  const targets = fuel.targets || {calories:2000,protein:150,carbs:200,fat:67,fiber:28};
   const today = new Date().toDateString();
   const todayMeals = (fuel.meals||[]).filter(m=>m.date===today);
 
@@ -475,7 +477,8 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
     protein: acc.protein + (m.protein||0),
     carbs:   acc.carbs   + (m.carbs||0),
     fat:     acc.fat     + (m.fat||0),
-  }), {cal:0,protein:0,carbs:0,fat:0});
+    fiber:   acc.fiber   + (m.fiber||0),
+  }), {cal:0,protein:0,carbs:0,fat:0,fiber:0});
 
   // Water tracking
   const waterToday = fuel.waterDate===today ? (fuel.waterGlasses||0) : 0;
@@ -639,7 +642,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
             <span style={{fontSize:24,flexShrink:0}}>{meal.emoji}</span>
             <div style={{flex:1}}>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{meal.name}</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{meal.unit} · {meal.cal} kcal · P:{meal.protein}g · C:{meal.carbs}g · F:{meal.fat}g</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{meal.unit} · {meal.cal} kcal · P:{meal.protein}g · C:{meal.carbs}g · F:{meal.fat}g · Fiber:{meal.fiber||0}g</div>
             </div>
             <span style={{color:"#10B981",fontSize:18}}>+</span>
           </button>
@@ -651,7 +654,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
         <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#444"}}>✏️ Add custom meal</div>
         <input value={customMeal.name} onChange={e=>setCustomMeal(m=>({...m,name:e.target.value}))} placeholder="Meal name" style={{...S.input,padding:"10px 14px",fontSize:13}}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {[{k:"cal",l:"Calories"},{k:"protein",l:"Protein (g)"},{k:"carbs",l:"Carbs (g)"},{k:"fat",l:"Fat (g)"}].map(f=>(
+          {[{k:"cal",l:"Calories"},{k:"protein",l:"Protein (g)"},{k:"carbs",l:"Carbs (g)"},{k:"fat",l:"Fat (g)"},{k:"fiber",l:"Fiber (g)"}].map(f=>(
             <div key={f.k}>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginBottom:3}}>{f.l}</div>
               <input type="number" value={customMeal[f.k]} onChange={e=>setCustomMeal(m=>({...m,[f.k]:e.target.value}))} placeholder="0" style={{...S.input,padding:"8px 12px",fontSize:13}}/>
@@ -660,8 +663,8 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
         </div>
         <button onClick={()=>{
           if(!customMeal.name) return;
-          addMeal({name:customMeal.name,emoji:"🍽️",cal:parseInt(customMeal.cal)||0,protein:parseInt(customMeal.protein)||0,carbs:parseInt(customMeal.carbs)||0,fat:parseInt(customMeal.fat)||0,unit:"custom"});
-          setCustomMeal({name:"",cal:"",protein:"",carbs:"",fat:""});
+          addMeal({name:customMeal.name,emoji:"🍽️",cal:parseInt(customMeal.cal)||0,protein:parseInt(customMeal.protein)||0,carbs:parseInt(customMeal.carbs)||0,fat:parseInt(customMeal.fat)||0,fiber:parseInt(customMeal.fiber)||0,unit:"custom"});
+          setCustomMeal({name:"",cal:"",protein:"",carbs:"",fat:"",fiber:""});
         }} style={{...S.btn("linear-gradient(135deg,#F59E0B,#FBBF24)"),padding:"11px"}}>
           Add Meal
         </button>
@@ -768,14 +771,15 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
           <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",marginBottom:10}}>
             Goal: {targets.calories} kcal
           </div>
-          <div style={{display:"flex",gap:12}}>
+          <div style={{display:"flex",gap:10}}>
             {[
               {l:"Protein",v:totals.protein,t:targets.protein,c:"#10B981"},
               {l:"Carbs",  v:totals.carbs,  t:targets.carbs,  c:"#0EA5E9"},
               {l:"Fat",    v:totals.fat,    t:targets.fat,    c:"#8B5CF6"},
+              {l:"Fiber",  v:totals.fiber,  t:targets.fiber||28, c:"#F97316"},
             ].map(m=>(
               <div key={m.l} style={{textAlign:"center"}}>
-                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:15,color:m.c}}>{m.v}g</div>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:14,color:m.c}}>{m.v}g</div>
                 <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#bbb",textTransform:"uppercase",letterSpacing:0.5}}>{m.l}</div>
               </div>
             ))}
@@ -846,12 +850,13 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
       {todayMeals.length > 0 && (
         <div style={{background:"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"16px",border:"1px solid #FDE68A"}}>
           <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#92400E",marginBottom:10}}>Today's summary</div>
-          <div style={{display:"flex",gap:12,marginBottom:12}}>
+          <div style={{display:"flex",gap:10,marginBottom:12}}>
             {[
               {l:"Calories",v:totals.cal,t:targets.calories,u:"kcal",c:"#F59E0B"},
               {l:"Protein", v:totals.protein,t:targets.protein,u:"g",c:"#10B981"},
               {l:"Carbs",   v:totals.carbs,t:targets.carbs,u:"g",c:"#0EA5E9"},
               {l:"Fat",     v:totals.fat,t:targets.fat,u:"g",c:"#8B5CF6"},
+              {l:"Fiber",   v:totals.fiber,t:targets.fiber||28,u:"g",c:"#F97316"},
             ].map(m=>(
               <div key={m.l} style={{flex:1,textAlign:"center"}}>
                 <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:14,color:m.c}}>{Math.round((m.v/m.t)*100)}%</div>
@@ -860,9 +865,13 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
             ))}
           </div>
           <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#92400E",lineHeight:1.6,fontStyle:"italic"}}>
-            {totals.protein >= targets.protein
-              ? "🎯 Protein target reached! Your Fuel habit is working."
-              : `${targets.protein - totals.protein}g protein remaining to hit your daily target.`}
+            {totals.protein >= targets.protein && totals.fiber >= (targets.fiber||28)
+              ? "🎯 Protein and fiber targets reached! Your Fuel habit is working."
+              : totals.protein >= targets.protein
+              ? `🟢 Protein done! Still need ${(targets.fiber||28) - totals.fiber}g fiber — add vegetables or legumes.`
+              : totals.fiber >= (targets.fiber||28)
+              ? `🟢 Fiber done! Still need ${targets.protein - totals.protein}g protein today.`
+              : `${targets.protein - totals.protein}g protein and ${(targets.fiber||28) - totals.fiber}g fiber remaining today.`}
           </div>
         </div>
       )}
