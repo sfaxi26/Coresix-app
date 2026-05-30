@@ -336,6 +336,25 @@ const MEAL_PRESETS = [
   { name:"Avocado",                 emoji:"🥑", cal:160, protein:2,  carbs:9,  fat:15, fiber:7,  unit:"half" },
 ];
 
+// ── LAYER 2 — MOVE ───────────────────────────────────────
+const WORKOUT_PRESETS = [
+  { name:"Walking",          emoji:"🚶", met:3.5, unit:"min" },
+  { name:"Running",          emoji:"🏃", met:8.0, unit:"min" },
+  { name:"Cycling",          emoji:"🚴", met:7.0, unit:"min" },
+  { name:"Push-ups",         emoji:"💪", met:4.0, unit:"sets" },
+  { name:"Squats",           emoji:"🏋️", met:5.0, unit:"sets" },
+  { name:"Plank",            emoji:"🧘", met:3.0, unit:"min" },
+  { name:"Jumping Jacks",    emoji:"⭐", met:8.0, unit:"min" },
+  { name:"Yoga",             emoji:"🌿", met:2.5, unit:"min" },
+  { name:"Swimming",         emoji:"🏊", met:8.0, unit:"min" },
+  { name:"HIIT",             emoji:"🔥", met:10.0, unit:"min" },
+  { name:"Pull-ups",         emoji:"🏋️", met:4.0, unit:"sets" },
+  { name:"Lunges",           emoji:"🦵", met:4.0, unit:"sets" },
+  { name:"Stretching",       emoji:"🤸", met:2.5, unit:"min" },
+  { name:"Stair climbing",   emoji:"🪜", met:9.0, unit:"min" },
+  { name:"Bodyweight circuit",emoji:"⚡", met:7.0, unit:"min" },
+];
+
 // ── LADDER ───────────────────────────────────────────────
 const LADDER = {
   fuel: [
@@ -441,6 +460,10 @@ const initState = () => ({
     targets:{calories:2000,protein:150,carbs:200,fat:67,fiber:28},
     meals:[], waterGlasses:0, waterDate:"",
   },
+  move:{
+    stepGoal:7000, stepsToday:0, stepsDate:"",
+    workouts:[], // [{date, name, emoji, duration, sets, unit, calories}]
+  },
 });
 
 // Migrate old state — add fuel if missing
@@ -456,6 +479,7 @@ const migrateState = (s) => {
   }
   if (!s.fuel.targets) s.fuel.targets = {calories:2000,protein:150,carbs:200,fat:67,fiber:28};
   if (s.fuel.targets && !s.fuel.targets.fiber) s.fuel.targets.fiber = 28;
+  if (!s.move) s.move = {stepGoal:7000,stepsToday:0,stepsDate:"",workouts:[]};
   return s;
 };
 
@@ -1004,6 +1028,302 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
   );
 }
 
+
+// ── MOVE LAYER COMPONENT ─────────────────────────────────
+function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
+  const [view, setView] = useState("dashboard"); // dashboard | log | steps
+  const [moveInsight, setMoveInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [customWorkout, setCustomWorkout] = useState({name:"",duration:"",sets:"",unit:"min"});
+  const [stepInput, setStepInput] = useState("");
+
+  const move = st.move || {};
+  const today = new Date().toISOString().slice(0,10);
+  const stepGoal = move.stepGoal || 7000;
+  const stepsToday = move.stepsDate===today ? (move.stepsToday||0) : 0;
+  const todayWorkouts = (move.workouts||[]).filter(w=>w.date===today);
+
+  // Total minutes moved today
+  const totalMinutes = todayWorkouts.reduce((acc,w)=>acc+(parseInt(w.duration)||0),0);
+  const stepPct = Math.min(100, Math.round((stepsToday/stepGoal)*100));
+
+  // Analyse habit vs tracking
+  const analyzeMovement = () => {
+    if (!moveHabit) return null;
+    const habit = moveHabit.toLowerCase();
+    if (habit.includes("push-up") || habit.includes("pushup")) {
+      const done = todayWorkouts.some(w=>w.name.toLowerCase().includes("push"));
+      return { goal:"Do push-ups today", actual: done?"Push-ups logged ✓":"Not logged yet", met:done };
+    } else if (habit.includes("walk") || habit.includes("steps")) {
+      const target = habit.includes("10000")?10000:7000;
+      return { goal:`${target.toLocaleString()} steps`, actual:`${stepsToday.toLocaleString()} steps`, met:stepsToday>=target };
+    } else if (habit.includes("stair")) {
+      const done = todayWorkouts.some(w=>w.name.toLowerCase().includes("stair"));
+      return { goal:"Take stairs today", actual:done?"Logged ✓":"Not logged yet", met:done };
+    } else if (habit.includes("workout") || habit.includes("exercise") || habit.includes("hiit")) {
+      return { goal:"Complete a workout", actual:todayWorkouts.length>0?`${todayWorkouts.length} workout(s) logged`:"No workout logged", met:todayWorkouts.length>0 };
+    } else if (habit.includes("yoga") || habit.includes("stretch")) {
+      const done = todayWorkouts.some(w=>["yoga","stretch"].some(k=>w.name.toLowerCase().includes(k)));
+      return { goal:"Yoga or stretching", actual:done?"Logged ✓":"Not logged yet", met:done };
+    } else if (habit.includes("minute") || habit.includes("min")) {
+      const match = moveHabit.match(/(\d+)/);
+      const target = match ? parseInt(match[1]) : 20;
+      return { goal:`${target} minutes of movement`, actual:`${totalMinutes} minutes logged`, met:totalMinutes>=target };
+    }
+    return { goal:moveHabit, actual:todayWorkouts.length>0?`${todayWorkouts.length} activity logged`:"No activity logged", met:todayWorkouts.length>0 };
+  };
+
+  const addWorkout = (workout) => {
+    const newWorkouts = [...(move.workouts||[]), {...workout, date:today, time:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}];
+    update({move:{...move, workouts:newWorkouts.slice(-50)}});
+    setView("dashboard");
+  };
+
+  const getMoveInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const ha = analyzeMovement();
+    const context = JSON.stringify({
+      habit: moveHabit,
+      steps_today: stepsToday,
+      step_goal: stepGoal,
+      steps_pct: stepPct,
+      workouts_logged: todayWorkouts.length,
+      workout_names: todayWorkouts.map(w=>w.name).join(", "),
+      total_minutes: totalMinutes,
+      habit_met: ha?.met,
+    });
+    const insight = await fetchAIInsight("move_insight", context);
+    setMoveInsight(insight || "Every step counts. Keep moving — your body notices even when your mind doesn't.");
+    setInsightLoading(false);
+  };
+
+  // ── LOG WORKOUT ──
+  if (view==="log") return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>←</button>
+        <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Log a Workout</h3>
+      </div>
+
+      <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:380,overflowY:"auto"}}>
+        {WORKOUT_PRESETS.map((w,i)=>(
+          <button key={i} onClick={()=>{
+            addWorkout({name:w.name,emoji:w.emoji,duration:20,sets:3,unit:w.unit,calories:Math.round(w.met*20*0.25)});
+          }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+            <span style={{fontSize:24,flexShrink:0}}>{w.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{w.name}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Tap to log · adjust duration after</div>
+            </div>
+            <span style={{color:"#10B981",fontSize:18}}>+</span>
+          </button>
+        ))}
+      </div>
+
+      <div style={{...S.card,display:"flex",flexDirection:"column",gap:10}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#444"}}>✏️ Custom activity</div>
+        <input value={customWorkout.name} onChange={e=>setCustomWorkout(w=>({...w,name:e.target.value}))} placeholder="Activity name" style={{...S.input,padding:"10px 14px",fontSize:13}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginBottom:3}}>Duration (min)</div>
+            <input type="number" value={customWorkout.duration} onChange={e=>setCustomWorkout(w=>({...w,duration:e.target.value}))} placeholder="20" style={{...S.input,padding:"8px 12px",fontSize:13}}/>
+          </div>
+          <div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginBottom:3}}>Sets (optional)</div>
+            <input type="number" value={customWorkout.sets} onChange={e=>setCustomWorkout(w=>({...w,sets:e.target.value}))} placeholder="3" style={{...S.input,padding:"8px 12px",fontSize:13}}/>
+          </div>
+        </div>
+        <button onClick={()=>{
+          if(!customWorkout.name) return;
+          addWorkout({name:customWorkout.name,emoji:"🏃",duration:parseInt(customWorkout.duration)||20,sets:parseInt(customWorkout.sets)||0,unit:"min",calories:0});
+          setCustomWorkout({name:"",duration:"",sets:"",unit:"min"});
+        }} style={{...S.btn("linear-gradient(135deg,#10B981,#34D399)"),padding:"11px"}}>
+          Add Activity
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── STEPS SCREEN ──
+  if (view==="steps") return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>←</button>
+        <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Log Steps</h3>
+      </div>
+      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Enter your step count from your phone health app or pedometer.</p>
+
+      <div style={{...S.card,textAlign:"center",padding:"28px"}}>
+        <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:64,color:"#10B981",lineHeight:1}}>{stepsToday.toLocaleString()}</div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginTop:4}}>steps today</div>
+        <div style={{background:"#f0f0f0",borderRadius:8,height:8,overflow:"hidden",margin:"16px 0"}}>
+          <div style={{height:"100%",borderRadius:8,background:"linear-gradient(90deg,#10B981,#34D399)",width:`${stepPct}%`,transition:"width 0.6s ease"}}/>
+        </div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>{stepGoal.toLocaleString()} step goal · {stepPct}%</div>
+      </div>
+
+      <input type="number" value={stepInput} onChange={e=>setStepInput(e.target.value)} placeholder="Enter your steps e.g. 4500" style={{...S.input,padding:"14px 18px",fontSize:18,textAlign:"center"}}/>
+
+      <div style={{display:"flex",gap:8}}>
+        {[2000,5000,7000,10000].map(n=>(
+          <button key={n} onClick={()=>setStepInput(String(n))} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${stepInput===String(n)?"#10B981":"#e8e8e8"}`,background:stepInput===String(n)?"#ECFDF5":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:stepInput===String(n)?"#10B981":"#666",cursor:"pointer"}}>
+            {(n/1000).toFixed(0)}k
+          </button>
+        ))}
+      </div>
+
+      <button onClick={()=>{
+        if(!stepInput) return;
+        update({move:{...move,stepsToday:parseInt(stepInput),stepsDate:today}});
+        setStepInput("");
+        setView("dashboard");
+      }} style={S.btn("linear-gradient(135deg,#10B981,#34D399)","0 8px 24px #10B98144")}>
+        Save Steps →
+      </button>
+
+      <div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Step goal</div>
+        <div style={{display:"flex",gap:8}}>
+          {[5000,7000,8000,10000].map(n=>(
+            <button key={n} onClick={()=>update({move:{...move,stepGoal:n}})} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${stepGoal===n?"#10B981":"#e8e8e8"}`,background:stepGoal===n?"#ECFDF5":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:stepGoal===n?"#10B981":"#666",cursor:"pointer"}}>
+              {(n/1000).toFixed(0)}k
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── DASHBOARD ──
+  const ha = analyzeMovement();
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:24,color:"#0f0f0f"}}>💪 Move</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Today's movement</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#10B981",lineHeight:1}}>{totalMinutes}</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>min active</div>
+        </div>
+      </div>
+
+      {/* Move habit connection */}
+      {moveHabit && (
+        <div style={{background:ha?.met?"linear-gradient(135deg,#ECFDF5,white)":"linear-gradient(135deg,#F0FDF4,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#A7F3D0":"#D1FAE5"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Move Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{moveHabit}"</div>
+          {ha && (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#10B981":"#F59E0B",fontWeight:600}}>
+                {ha.actual} — {ha.met?"Habit goal met!":ha.goal}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step tracker */}
+      <div style={{...S.card,border:"1.5px solid #A7F3D0"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>👟 Steps</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#10B981",fontWeight:600}}>{stepsToday.toLocaleString()} / {stepGoal.toLocaleString()}</div>
+        </div>
+        <div style={{background:"#f0f0f0",borderRadius:8,height:10,overflow:"hidden",marginBottom:10}}>
+          <div style={{height:"100%",borderRadius:8,background:"linear-gradient(90deg,#10B981,#34D399)",width:`${stepPct}%`,transition:"width 0.6s ease"}}/>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setView("steps")} style={{...S.btn("linear-gradient(135deg,#10B981,#34D399)","0 4px 12px #10B98144"),flex:1,padding:"10px",fontSize:13}}>
+            👟 Log Steps
+          </button>
+          {stepsToday>=stepGoal&&<div style={{display:"flex",alignItems:"center",padding:"0 12px",fontSize:20}}>🎉</div>}
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <button onClick={()=>setView("log")} style={{...S.btn("linear-gradient(135deg,#10B981,#34D399)","0 6px 18px #10B98144"),padding:"14px",fontSize:14}}>
+        🏃 Log a Workout
+      </button>
+
+      {/* Today's workouts */}
+      {todayWorkouts.length>0&&(
+        <div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Today's workouts</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {todayWorkouts.map((w,i)=>(
+              <div key={i} style={{...S.card,display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1.5px solid #A7F3D0"}}>
+                <span style={{fontSize:22}}>{w.emoji}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{w.name}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>
+                    {w.time} · {w.duration} min{w.sets?` · ${w.sets} sets`:""}
+                    {w.calories?` · ~${w.calories} kcal`:""}
+                  </div>
+                </div>
+                <button onClick={()=>{
+                  const newWorkouts=(move.workouts||[]).filter((_,idx)=>idx!==((move.workouts||[]).indexOf(w)));
+                  update({move:{...move,workouts:newWorkouts}});
+                }} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",color:"#ddd"}}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {todayWorkouts.length===0&&stepsToday===0&&(
+        <div style={{textAlign:"center",padding:"20px",color:"#bbb"}}>
+          <div style={{fontSize:32,marginBottom:8}}>🏃</div>
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,lineHeight:1.6}}>No movement logged yet.<br/>Log steps or a workout to track your progress.</p>
+        </div>
+      )}
+
+      {/* Daily summary */}
+      {(todayWorkouts.length>0||stepsToday>0)&&(
+        <div style={{background:"linear-gradient(135deg,#ECFDF5,white)",borderRadius:16,padding:"16px",border:"1px solid #A7F3D0"}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#065F46",marginBottom:10}}>Today's movement summary</div>
+          <div style={{display:"flex",gap:12}}>
+            {[
+              {l:"Steps",v:`${stepPct}%`,c:"#10B981"},
+              {l:"Active min",v:totalMinutes,c:"#10B981"},
+              {l:"Workouts",v:todayWorkouts.length,c:"#10B981"},
+            ].map(m=>(
+              <div key={m.l} style={{flex:1,textAlign:"center"}}>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:m.c}}>{m.v}</div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#bbb",textTransform:"uppercase",letterSpacing:0.5}}>{m.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Move Coach */}
+      <div style={{...S.card,border:"1.5px solid #A7F3D0",background:"linear-gradient(135deg,#ECFDF5,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#065F46",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Move Coach</div>
+        {moveInsight?(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{moveInsight}"</p>
+        ):(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Log steps or a workout — then get a personalised coaching insight.
+          </p>
+        )}
+        <button onClick={getMoveInsight} disabled={insightLoading||(todayWorkouts.length===0&&stepsToday===0)}
+          style={{...S.btn("linear-gradient(135deg,#10B981,#34D399)","0 4px 12px #10B98144"),padding:"11px",fontSize:13,opacity:(insightLoading||(todayWorkouts.length===0&&stepsToday===0))?0.5:1}}>
+          {insightLoading?"Thinking...":todayWorkouts.length===0&&stepsToday===0?"Log movement first to unlock":moveInsight?"Get New Insight →":"Analyse My Move Day →"}
+        </button>
+      </div>
+
+      {goToHabits&&(
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>← Back to Habits</button>
+      )}
+    </div>
+  );
+}
+
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
 function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
   const [analytics, setAnalytics] = useState(null);
@@ -1189,6 +1509,12 @@ export default function App() {
           meals: [],
           waterGlasses: 0,
           waterDate: "",
+        },
+        move: {
+          ...(st.move||{}),
+          stepsToday: 0,
+          stepsDate: "",
+          workouts: (st.move?.workouts||[]).filter(w=>w.date===new Date().toISOString().slice(0,10)),
         }
       });
     }
@@ -1853,6 +2179,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                         <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:isDone?"rgba(255,255,255,0.6)":"#aaa"}}>Rung {ladder.rung+1}/5 · {ladder.days} days</div>
                       </div>
                       {pid==="fuel"&&<button onClick={(e)=>{e.stopPropagation();goTo("fuel_layer");}} style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#F59E0B",cursor:"pointer"}}>⚡ Track</button>}
+                      {pid==="move"&&<button onClick={(e)=>{e.stopPropagation();goTo("move_layer");}} style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",cursor:"pointer"}}>💪 Track</button>}
                     </div>
                     <div style={{background:isDone?p.light:"white",padding:"14px 18px",transition:"all 0.4s"}}>
                       {!selected ? (
@@ -1876,6 +2203,12 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                             <button className="tap" onClick={()=>goTo("fuel_layer")}
                               style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #FDE68A",background:"#FFFBEB",color:"#F59E0B",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                               ⚡ Track Nutrition →
+                            </button>
+                          )}
+                          {pid==="move"&&(
+                            <button className="tap" onClick={()=>goTo("move_layer")}
+                              style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #A7F3D0",background:"#ECFDF5",color:"#10B981",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                              💪 Track Movement →
                             </button>
                           )}
                         </div>
@@ -1932,6 +2265,17 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             </div>
           );
         })}
+
+        {/* ── MOVE LAYER ── */}
+        {st.screen==="move_layer"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+            </div>
+            <MoveLayer st={st} update={update} S={S} moveHabit={st.ladder?.move?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+          </div>
+        )}
 
         {/* ── FUEL LAYER ── */}
         {st.screen==="fuel_layer"&&(
