@@ -1818,6 +1818,10 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
         {st.screen==="explore"&&(
           <div className="fu" style={{...S.page,paddingBottom:90}}>
             <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+              </div>
               <h2 style={S.h1}>Explore</h2>
               <p style={S.sub}>Science, coaching and insights to deepen your practice.</p>
             </div>
