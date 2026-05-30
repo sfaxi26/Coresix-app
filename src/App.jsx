@@ -440,11 +440,25 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
   );
 
   if (!analytics) return (
-    <div style={{...S.card,textAlign:"center",padding:"28px"}}>
-      <div style={{fontSize:36,marginBottom:12}}>🧠</div>
-      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14,lineHeight:1.7}}>
-        Connect to the backend to unlock pattern analysis and personalised AI insights.
-      </p>
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{...S.card,textAlign:"center",padding:"28px"}}>
+        <div style={{fontSize:36,marginBottom:12}}>🧠</div>
+        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#555",fontSize:14,lineHeight:1.7,marginBottom:12}}>
+          Complete some habits first to unlock pattern analysis and AI insights.
+        </p>
+        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:12,lineHeight:1.6}}>
+          The brain analyses your patterns after you check in a few times.
+        </p>
+      </div>
+      <button onClick={getInsight} disabled={insightLoading}
+        style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 6px 20px #8B5CF644"),opacity:insightLoading?0.7:1}}>
+        {insightLoading ? "Thinking..." : "Get a General Insight →"}
+      </button>
+      {insight && (
+        <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"18px",border:"1px solid #DDD6FE"}}>
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#374151",lineHeight:1.75,fontStyle:"italic"}}>"{insight}"</p>
+        </div>
+      )}
     </div>
   );
 
@@ -612,14 +626,18 @@ export default function App() {
   };
 
   const fetchAIInsight = async (purpose, pillar) => {
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return null;
     const res = await api("POST", "/api/insight", {
-      deviceId: DEVICE_ID, purpose, pillar,
+      deviceId: id, purpose, pillar,
     });
     return res?.content || null;
   };
 
   const fetchAnalytics = async () => {
-    return await api("GET", `/api/analytics/${DEVICE_ID}`);
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return null;
+    return await api("GET", `/api/analytics/${id}`);
   };
 
   const resetApp = () => {
