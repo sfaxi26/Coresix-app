@@ -1,5 +1,34 @@
 import { useState, useEffect } from "react";
 
+// ── API CONFIG ───────────────────────────────────────────
+const API = process.env.REACT_APP_API_URL || "https://coresix-backend.up.railway.app";
+
+// Generate or get device ID — persists in localStorage
+const getDeviceId = () => {
+  let id = localStorage.getItem("coresix_device_id");
+  if (!id) {
+    id = "cs_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("coresix_device_id", id);
+  }
+  return id;
+};
+
+// API helper
+const api = async (method, path, body) => {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("API call failed, using local state:", err.message);
+    return null; // Graceful fallback to localStorage
+  }
+};
+
 // ── PILLARS ──────────────────────────────────────────────
 const PILLARS = {
   fuel:    { name:"Fuel",    emoji:"⚡", color:"#F59E0B", grad:"linear-gradient(135deg,#F59E0B,#FBBF24)", light:"#FFFBEB", border:"#FDE68A", desc:"Nutrition & Energy" },
@@ -136,6 +165,126 @@ const COACHING = {
   ],
 };
 
+// ── EXPLORE CONTENT ──────────────────────────────────────
+const EXPLORE = {
+  weekly_themes: [
+    { theme:"Awareness",    color:"#10B981", message:"The more you talk about your goals, the more real they become. Change does not start with action. It starts with noticing." },
+    { theme:"Identity",     color:"#8B5CF6", message:"You are not trying to do this. You are becoming someone who does. Framing habits as identity increases success by 32%." },
+    { theme:"Momentum",     color:"#F59E0B", message:"Not big actions. Not perfect actions. Just small ones. Every habit you complete adds to your momentum." },
+    { theme:"Trust",        color:"#0EA5E9", message:"Trust the work when the results hide. Growth is often invisible before it is visible. The foundation you are building now will show up later." },
+    { theme:"Better Not Perfect", color:"#EC4899", message:"Be gentle with yourself. Progress is rarely linear. What matters is that you keep coming back." },
+    { theme:"Your Why",     color:"#F97316", message:"Reconnect with why you started. When your actions are rooted in purpose, change becomes natural and sustainable." },
+    { theme:"Consistency",  color:"#10B981", message:"Consistency is not about being perfect every day. It is about coming back every time you slip." },
+  ],
+  articles: [
+    {
+      id:"willpower_brain",
+      emoji:"🧠",
+      title:"How Your Brain Controls Willpower",
+      duration:"3 min",
+      color:"#8B5CF6",
+      bg:"#F5F3FF",
+      tag:"Science",
+      content:[
+        { heading:"The Prefrontal Cortex", body:"Willpower is not about mental strength — it has a physical basis in the brain. The prefrontal cortex, located right behind your forehead, is the control centre for willpower. It helps you plan, make decisions, and resist impulses." },
+        { heading:"Willpower Is Like a Muscle", body:"The good news is that willpower is not something you either have or do not have. It is more like a muscle — it can be trained, strengthened, and also tired out if you push it too much without rest." },
+        { heading:"Willpower Is Like a Battery", body:"Every urge, temptation, or tough decision drains it a little. Recharge it with rest, healthy food, and breaks. Do not waste it on unnecessary battles — make the healthy choice the easy choice." },
+        { heading:"What This Means for You", body:"Sleep recharges your prefrontal cortex. Stress drains it. Food fuels it. Every pillar in CoreSix directly supports your willpower capacity. This is not coincidence — it is design." },
+      ]
+    },
+    {
+      id:"fuel_science",
+      emoji:"⚡",
+      title:"The Science of Nutrition Habits",
+      duration:"3 min",
+      color:"#F59E0B",
+      bg:"#FFFBEB",
+      tag:"Fuel",
+      content:[
+        { heading:"40% Is Already Habit", body:"40% of what you eat every day is driven by habit — not hunger, not conscious choice. That means the food decisions that feel automatic right now were actually learned. And anything learned can be changed." },
+        { heading:"Add, Don't Restrict", body:"Research shows you are more likely to accomplish a goal focused on doing something rather than avoiding something. Instead of 'eat less junk food' — set a goal like 'add one vegetable to your day.' Addition builds momentum. Restriction builds resistance." },
+        { heading:"Cravings Pass on Their Own", body:"On average it takes about 15-20 minutes before cravings go away. Left on their own, cravings will eventually disappear — the key is to remember this and ride the wave instead of giving in." },
+        { heading:"2-3 Structured Meals", body:"Eating 2-3 structured meals rather than grazing throughout the day improves insulin sensitivity, stabilises energy, and makes hunger signals clearer. Your body works better with rhythm than with constant input." },
+      ]
+    },
+    {
+      id:"move_science",
+      emoji:"💪",
+      title:"Why Movement Changes Everything",
+      duration:"2 min",
+      color:"#10B981",
+      bg:"#ECFDF5",
+      tag:"Move",
+      content:[
+        { heading:"Movement Is Medicine", body:"Physical activity has a direct impact on every other pillar. It improves sleep quality, reduces stress hormones, sharpens focus, boosts mood, and strengthens willpower. No other single habit has this breadth of effect." },
+        { heading:"The 5 Push-Up Principle", body:"BJ Fogg's research shows that tiny actions anchored to existing routines are the foundation of lasting movement habits. You do not start with a workout. You start with 5 push-ups before your shower. Identity change starts with repeated tiny actions — not heroic efforts." },
+        { heading:"Walking After Meals", body:"Walking for just 10 minutes after eating improves blood sugar regulation by up to 30%. It is one of the most researched and underutilised health interventions available. No gym required." },
+        { heading:"The Minimum Effective Dose", body:"Research shows that 7000 steps and 20-30 minutes of movement daily is the threshold for long-term health protection — reducing cardiovascular disease risk by 50% and improving longevity markers significantly." },
+      ]
+    },
+    {
+      id:"rest_science",
+      emoji:"😴",
+      title:"Sleep Is Your Superpower",
+      duration:"3 min",
+      color:"#8B5CF6",
+      bg:"#F5F3FF",
+      tag:"Rest",
+      content:[
+        { heading:"Sleep and Willpower", body:"Poor sleep directly impairs your prefrontal cortex — the seat of willpower, decision-making, and impulse control. Every habit you try to build becomes harder when you are sleep deprived. Sleep is not rest. It is maintenance." },
+        { heading:"The Screen Problem", body:"Blue light from screens suppresses melatonin production by up to 50%, delaying your natural sleep onset by 90 minutes or more. Putting your phone in another room removes the temptation entirely. No willpower required — just distance." },
+        { heading:"Consistency Over Duration", body:"Your body's internal clock is regulated primarily by timing consistency — not the number of hours you sleep. Going to bed at the same time every night, even on weekends, synchronises your sleep cycle and dramatically improves sleep quality within 1-2 weeks." },
+        { heading:"Morning Light", body:"Natural light exposure within 30 minutes of waking sets your cortisol rhythm for the day, which directly determines when you feel tired at night. This one habit protects your entire sleep architecture." },
+      ]
+    },
+    {
+      id:"calm_science",
+      emoji:"🧘",
+      title:"The Neuroscience of Calm",
+      duration:"2 min",
+      color:"#0EA5E9",
+      bg:"#F0F9FF",
+      tag:"Calm",
+      content:[
+        { heading:"Stress Shrinks Your Brain", body:"Chronic stress literally shrinks the prefrontal cortex and enlarges the amygdala — meaning you become more reactive and less controlled over time. This affects every decision you make and every habit you try to build." },
+        { heading:"The 30-Second Reset", body:"Deep breathing activates the vagus nerve and triggers the parasympathetic nervous system — your body's natural calm response. Three breaths takes 30 seconds. The neurological effect lasts hours. This is not wellness advice. It is biology." },
+        { heading:"Gratitude Rewires the Brain", body:"Gratitude practice physically rewires the prefrontal cortex over time — strengthening the neural pathways associated with positive emotion and reducing reactivity. What you focus on, you strengthen." },
+        { heading:"8 Weeks to a Calmer Brain", body:"Consistent meditation practice produces measurable changes in brain structure within 8 weeks — including increased grey matter density in the prefrontal cortex and reduced amygdala reactivity. You are literally rebuilding your brain. 10 minutes a day is the minimum effective dose." },
+      ]
+    },
+    {
+      id:"connect_science",
+      emoji:"🤝",
+      title:"Connection Is a Biological Need",
+      duration:"2 min",
+      color:"#EC4899",
+      bg:"#FDF2F8",
+      tag:"Connect",
+      content:[
+        { heading:"Loneliness Is Physical Pain", body:"Loneliness and social disconnection activate the same brain regions as physical pain. Connection is not a luxury — it is a biological need as fundamental as food and sleep. Isolation has the same mortality risk as smoking 15 cigarettes a day." },
+        { heading:"Connection Doubles Habit Success", body:"Social support is one of the strongest predictors of habit success. People who share goals with others are significantly more likely to follow through. Accountability is not weakness — it is one of the most powerful tools in behavioural science." },
+        { heading:"Quality Over Quantity", body:"Research by John Gottman shows that what matters is not how often you see people — it is the quality of attention you give them. One conversation with full presence is worth more than ten distracted ones." },
+        { heading:"Go First", body:"Research shows that people significantly underestimate how much others appreciate being reached out to. The person you are thinking of messaging? They want to hear from you. The habit is simple: you go first." },
+      ]
+    },
+    {
+      id:"focus_science",
+      emoji:"🎯",
+      title:"The Science of Deep Focus",
+      duration:"3 min",
+      color:"#F97316",
+      bg:"#FFF7ED",
+      tag:"Focus",
+      content:[
+        { heading:"The Attention Economy", body:"The average person checks their phone 96 times a day. Every interruption costs 23 minutes of deep focus to recover from. If you feel scattered, it is not a character flaw — it is a design problem. Your environment is working against your focus." },
+        { heading:"Deep Work Is Rare and Valuable", body:"Cal Newport defines deep work as professional activity performed in a state of distraction-free concentration that pushes your cognitive capabilities to their limit. This kind of work creates new value and cannot be replicated by distracted effort." },
+        { heading:"Decision Fatigue Is Real", body:"Willpower weakens with every decision you make. The most important decision of your workday is what you do first — before email, before messages, before the world starts making demands. Writing your Most Important Task before opening any app takes 2 minutes and changes your entire day." },
+        { heading:"The Pomodoro Effect", body:"25 minutes of uninterrupted focus — one Pomodoro — has been shown to produce more output than 3 hours of distracted work. The secret is not working harder. It is working in protected time blocks with nothing else competing for your attention." },
+      ]
+    },
+  ]
+};
+
 // ── LADDER ───────────────────────────────────────────────
 const LADDER = {
   fuel: [
@@ -220,6 +369,7 @@ const getPillar = id => PILLARS[id];
 const getRand = arr => arr[Math.floor(Math.random()*arr.length)];
 
 const SAVE_KEY = "coresix_v2";
+const DEVICE_ID = getDeviceId();
 const loadState = () => { try { const d=localStorage.getItem(SAVE_KEY); return d?JSON.parse(d):null; } catch { return null; } };
 const saveState = s => { try { localStorage.setItem(SAVE_KEY,JSON.stringify(s)); } catch {} };
 
@@ -257,6 +407,136 @@ function CoachCard({ icon, title, message, color="#6D28D9", bg="linear-gradient(
   );
 }
 
+// ── BRAIN PANEL COMPONENT ────────────────────────────────
+function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
+  const [analytics, setAnalytics] = useState(null);
+  const [insight, setInsight] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    setLoading(true);
+    const data = await fetchAnalytics();
+    setAnalytics(data);
+    setLoading(false);
+  };
+
+  const getInsight = async () => {
+    setInsightLoading(true);
+    const content = await fetchAIInsight("weekly_insight");
+    setInsight(content || "Keep going. Every habit compounds.");
+    setInsightLoading(false);
+  };
+
+  if (loading) return (
+    <div style={{textAlign:"center",padding:"48px 20px"}}>
+      <div style={{fontSize:32,marginBottom:12,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
+      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14}}>Analysing your patterns...</p>
+    </div>
+  );
+
+  if (!analytics) return (
+    <div style={{...S.card,textAlign:"center",padding:"28px"}}>
+      <div style={{fontSize:36,marginBottom:12}}>🧠</div>
+      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14,lineHeight:1.7}}>
+        Connect to the backend to unlock pattern analysis and personalised AI insights.
+      </p>
+    </div>
+  );
+
+  const PATTERN_LABELS = {
+    relapse_risk:       { label:"Return needed",      color:"#EF4444", bg:"#FEF2F2", icon:"⚠️" },
+    strong_consistency: { label:"Strong consistency", color:"#10B981", bg:"#ECFDF5", icon:"💪" },
+    weekend_drop:       { label:"Weekend pattern",    color:"#F59E0B", bg:"#FFFBEB", icon:"📅" },
+    pillar_neglect:     { label:"Pillar neglect",     color:"#8B5CF6", bg:"#F5F3FF", icon:"🎯" },
+    all_or_nothing:     { label:"All-or-nothing",     color:"#EC4899", bg:"#FDF2F8", icon:"🔄" },
+  };
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Streak */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Streak Analysis</div>
+        <div style={{display:"flex",gap:12}}>
+          {[
+            {label:"Current",value:analytics.streak?.currentStreak||0,color:"#10B981"},
+            {label:"Longest",value:analytics.streak?.longestStreak||0,color:"#8B5CF6"},
+            {label:"Total Days",value:analytics.streak?.totalDays||0,color:"#F59E0B"},
+          ].map(item=>(
+            <div key={item.label} style={{flex:1,textAlign:"center",background:"#f8f8f8",borderRadius:14,padding:"14px 8px"}}>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:item.color,lineHeight:1}}>{item.value}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginTop:4,textTransform:"uppercase",letterSpacing:1}}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Consistency scores */}
+      {Object.keys(analytics.consistency||{}).length > 0 && (
+        <div style={S.card}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>7-Day Consistency</div>
+          {Object.entries(analytics.consistency).map(([pillar,data])=>{
+            const PILLARS_MAP = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
+            const colors = {fuel:"#F59E0B",move:"#10B981",rest:"#8B5CF6",calm:"#0EA5E9",connect:"#EC4899",focus:"#F97316"};
+            return (
+              <div key={pillar} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <span style={{fontSize:16,width:20}}>{PILLARS_MAP[pillar]}</span>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:"#333",textTransform:"capitalize"}}>{pillar}</span>
+                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:colors[pillar],fontWeight:600}}>{data.label}</span>
+                  </div>
+                  <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:4,background:colors[pillar]||"#10B981",width:`${data.score}%`,transition:"width 0.6s ease"}}/>
+                  </div>
+                </div>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",width:32,textAlign:"right"}}>{data.days}/7</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Patterns detected */}
+      {analytics.patterns?.length > 0 && (
+        <div style={S.card}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Patterns Detected</div>
+          {analytics.patterns.map((p,i)=>{
+            const label = PATTERN_LABELS[p.type] || {label:p.type,color:"#666",bg:"#f8f8f8",icon:"📊"};
+            return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,background:label.bg,marginBottom:8,border:`1px solid ${label.color}22`}}>
+                <span style={{fontSize:18}}>{label.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:label.color}}>{label.label}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginTop:2}}>{p.message}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* AI Insight */}
+      <div style={{...S.card,border:"1.5px solid #DDD6FE",background:"linear-gradient(135deg,#F5F3FF,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>🤖 AI Coach Insight</div>
+        {insight ? (
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#374151",lineHeight:1.75,fontStyle:"italic"}}>"{insight}"</p>
+        ) : (
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.6,marginBottom:12}}>Get a personalised insight based on your patterns — not generic advice.</p>
+        )}
+        <button onClick={getInsight} disabled={insightLoading}
+          style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 6px 20px #8B5CF644"),marginTop:12,opacity:insightLoading?0.7:1}}>
+          {insightLoading ? "Thinking..." : insight ? "Get New Insight" : "Generate My Insight →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [st, setSt]       = useState(()=>loadState()||initState());
   const [visible, setVisible] = useState(true);
@@ -264,6 +544,7 @@ export default function App() {
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:""});
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
+  const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
   const [lastQPid, setLastQPid] = useState(null);
@@ -298,6 +579,48 @@ export default function App() {
   },[]);
 
   const update = patch => setSt(prev=>({...prev,...patch}));
+
+  // ── BACKEND SYNC ──────────────────────────────────────
+  const syncUser = async (name, profile, scores) => {
+    await api("POST", "/api/user", {
+      deviceId: DEVICE_ID, name, profile, scores,
+    });
+  };
+
+  const syncCheckin = async (pillar, habit, date) => {
+    await api("POST", "/api/checkin", {
+      deviceId: DEVICE_ID, pillar, habit, date,
+    });
+  };
+
+  const syncStreak = async (streak, date) => {
+    await api("POST", "/api/streak", {
+      deviceId: DEVICE_ID, streak, date,
+    });
+  };
+
+  const syncLadder = async (pillar, rung, days, selected) => {
+    await api("POST", "/api/ladder", {
+      deviceId: DEVICE_ID, pillar, rung, days, selected,
+    });
+  };
+
+  const syncImpact = async (weekKey, answers) => {
+    await api("POST", "/api/impact", {
+      deviceId: DEVICE_ID, weekKey, answers,
+    });
+  };
+
+  const fetchAIInsight = async (purpose, pillar) => {
+    const res = await api("POST", "/api/insight", {
+      deviceId: DEVICE_ID, purpose, pillar,
+    });
+    return res?.content || null;
+  };
+
+  const fetchAnalytics = async () => {
+    return await api("GET", `/api/analytics/${DEVICE_ID}`);
+  };
 
   const resetApp = () => {
     if (window.confirm("Reset CoreSix? This will clear all your progress, streak and history.")) {
@@ -334,6 +657,7 @@ export default function App() {
   };
   const activePids = st.selectedPillars || getWeakest3();
   const done3 = activePids.filter(pid=>st.checkedToday[pid]).length;
+  const allDoneToday = done3 >= activePids.length && activePids.length > 0;
   const pct = activePids.length ? Math.round((done3/activePids.length)*100) : 0;
 
   // ── Q ANSWER ──
@@ -365,6 +689,8 @@ export default function App() {
 
     if (nextIdx>=QUESTIONNAIRE.length) {
       update({qAnswers:newAnswers,scores:newScores,profile:newProfile});
+      // Sync to backend
+      syncUser(st.name, newProfile, newScores);
       setTimeout(()=>goTo("profile_reveal"),200);
     } else {
       update({qAnswers:newAnswers,scores:newScores,profile:newProfile,qIndex:nextIdx});
@@ -379,6 +705,9 @@ export default function App() {
     const allDone = activePids.every(p=>p===pid||newChecked[p]);
     const newStreak = allDone ? st.streak+1 : st.streak;
     const coachMsg = getRand(COACHING.checkin_coaching);
+    // Sync to backend
+    syncCheckin(pid, st.ladder[pid].selected || "", today);
+    if (allDone) syncStreak(newStreak, today);
 
     if (allDone) {
       boom();
@@ -426,6 +755,8 @@ export default function App() {
     const rungCoach = COACHING.rung_coaching[pid]?.[rung];
     const p = PILLARS[pid];
     update({ladder:{...st.ladder,[pid]:{...st.ladder[pid],selected:habit,days:0}}});
+    // Sync to backend
+    syncLadder(pid, rung, 0, habit);
     if (rungCoach) {
       showCoaching(
         `${p.emoji} ${p.name} · ${LADDER[pid][rung].title}`,
@@ -517,6 +848,8 @@ export default function App() {
                           const newImpact = {...st.weeklyImpact,...newAnswers};
                           const newHistory = [...(st.impactHistory||[]),{week,answers:newAnswers,date:new Date().toLocaleDateString("en",{month:"short",day:"numeric"}),streak:st.streak}];
                           update({weeklyImpact:newImpact,impactHistory:newHistory.slice(-12),showWeeklyCheckin:false});
+                          // Sync to backend
+                          syncImpact(week, newAnswers);
                           setWeeklyStep(0);
                           setWeeklyAnswers({});
                           goTo("weekly_summary");
@@ -621,7 +954,42 @@ export default function App() {
 
       <div style={{width:"100%",maxWidth:430,margin:"0 auto",minHeight:"100vh",opacity:visible?1:0,transform:visible?"translateY(0)":"translateY(14px)",transition:"all 0.26s cubic-bezier(0.16,1,0.3,1)"}}>
 
-        {/* ── SETTINGS ── */}
+        {/* ── ARTICLE READER ── */}
+      {exploreArticle && (
+        <div style={{position:"fixed",inset:0,background:"white",zIndex:400,overflowY:"auto",animation:"slideUp 0.3s cubic-bezier(0.16,1,0.3,1)"}}>
+          <div style={{maxWidth:430,margin:"0 auto",padding:"0 0 40px"}}>
+            {/* Hero */}
+            <div style={{background:exploreArticle.bg,padding:"48px 24px 28px",borderBottom:`1px solid ${exploreArticle.color}22`}}>
+              <button onClick={()=>setExploreArticle(null)} style={{background:"none",border:"none",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",cursor:"pointer",marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
+                ← Back
+              </button>
+              <div style={{fontSize:44,marginBottom:14}}>{exploreArticle.emoji}</div>
+              <div style={{display:"inline-flex",background:exploreArticle.color,borderRadius:20,padding:"4px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"white",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{exploreArticle.tag}</div>
+              <h1 style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0f0f0f",letterSpacing:-0.5,lineHeight:1.2,marginBottom:8}}>{exploreArticle.title}</h1>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>{exploreArticle.duration} read</div>
+            </div>
+            {/* Content */}
+            <div style={{padding:"28px 24px",display:"flex",flexDirection:"column",gap:24}}>
+              {exploreArticle.content.map((section,i)=>(
+                <div key={i}>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f",marginBottom:8,letterSpacing:-0.3}}>{section.heading}</div>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:"#444",lineHeight:1.8}}>{section.body}</p>
+                </div>
+              ))}
+              {/* Bottom CTA */}
+              <div style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",borderRadius:18,padding:"20px",border:"1px solid #DDD6FE",marginTop:8}}>
+                <p style={{fontFamily:"Fraunces,serif",fontSize:16,color:"#0f0f0f",lineHeight:1.5,fontStyle:"italic",marginBottom:12}}>"The smallest step forward is still forward."</p>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#6D28D9",lineHeight:1.6}}>Built on research by BJ Fogg, James Clear, and behavioural science.</p>
+              </div>
+              <button onClick={()=>setExploreArticle(null)} style={{width:"100%",padding:"15px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#0f0f0f,#2d2d2d)",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+                Back to CoreSix →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── SETTINGS ── */}
       {st.screen==="settings"&&(
         <div className="fu" style={S.page}>
           <h2 style={S.h1}>Settings</h2>
@@ -906,6 +1274,79 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
           );
         })}
 
+        {/* ── EXPLORE ── */}
+        {st.screen==="explore"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div>
+              <h2 style={S.h1}>Explore</h2>
+              <p style={S.sub}>Science, coaching and insights to deepen your practice.</p>
+            </div>
+
+            {/* Weekly theme */}
+            {(()=>{
+              const week = new Date().getDay();
+              const theme = EXPLORE.weekly_themes[Math.floor(st.streak/7) % EXPLORE.weekly_themes.length];
+              return (
+                <div style={{background:`linear-gradient(135deg,${theme.color}22,${theme.color}08)`,borderRadius:20,padding:"20px",border:`1.5px solid ${theme.color}33`}}>
+                  <div style={{display:"inline-flex",background:theme.color,borderRadius:20,padding:"4px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"white",letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>This Week</div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:20,color:"#0f0f0f",marginBottom:8}}>{theme.theme}</div>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#444",lineHeight:1.7}}>{theme.message}</p>
+                </div>
+              );
+            })()}
+
+            {/* Today's unlock */}
+            <div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Today's Science</div>
+              {(()=>{
+                const todayArticle = EXPLORE.articles[st.streak % EXPLORE.articles.length];
+                const unlocked = allDoneToday;
+                return (
+                  <div onClick={()=>unlocked&&setExploreArticle(todayArticle)} style={{...S.card,border:`1.5px solid ${unlocked?todayArticle.color+"44":"#f0f0f0"}`,cursor:unlocked?"pointer":"default",opacity:unlocked?1:0.7,transition:"all 0.3s",position:"relative",overflow:"hidden"}}>
+                    {!unlocked&&<div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.7)",display:"flex",alignItems:"center",justifyContent:"center",borderRadius:20,zIndex:2}}>
+                      <div style={{textAlign:"center"}}>
+                        <div style={{fontSize:28,marginBottom:6}}>🔒</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600}}>Complete today's habits to unlock</div>
+                      </div>
+                    </div>}
+                    <div style={{display:"flex",alignItems:"center",gap:14}}>
+                      <div style={{width:52,height:52,borderRadius:15,background:todayArticle.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0,border:`1px solid ${todayArticle.color}22`}}>{todayArticle.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:todayArticle.color,letterSpacing:1,textTransform:"uppercase"}}>{todayArticle.tag}</div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#bbb"}}>{todayArticle.duration}</div>
+                        </div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",lineHeight:1.3}}>{todayArticle.title}</div>
+                      </div>
+                      {unlocked&&<div style={{fontSize:18,color:"#bbb"}}>→</div>}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* All articles */}
+            <div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>All Science</div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {EXPLORE.articles.map((article,i)=>(
+                  <div key={article.id} className="fu" onClick={()=>setExploreArticle(article)} style={{...S.card,cursor:"pointer",display:"flex",alignItems:"center",gap:12,animationDelay:`${i*0.04}s`,border:`1.5px solid ${article.color}22`}}>
+                    <div style={{width:44,height:44,borderRadius:13,background:article.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{article.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:article.color,letterSpacing:1,textTransform:"uppercase"}}>{article.tag}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>{article.duration}</div>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:14,color:"#0f0f0f",lineHeight:1.3}}>{article.title}</div>
+                    </div>
+                    <div style={{fontSize:16,color:"#bbb"}}>→</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── CELEBRATE ── */}
         {st.screen==="celebrate"&&(
           <div className="fu" style={{...S.page,alignItems:"center",justifyContent:"center",textAlign:"center"}}>
@@ -1025,7 +1466,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             </div>
 
             <div style={{display:"flex",gap:4,background:"white",borderRadius:14,padding:4,border:"1.5px solid #f0f0f0",boxShadow:"0 2px 8px #0001"}}>
-              {["today","pillars","history","impact"].map(t=>(
+              {["today","pillars","impact","brain"].map(t=>(
                 <button key={t} onClick={()=>update({tab:t})} style={{flex:1,padding:"10px",borderRadius:10,border:"none",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize",transition:"all 0.2s",background:st.tab===t?"#0f0f0f":"transparent",color:st.tab===t?"white":"#aaa",boxShadow:st.tab===t?"0 4px 12px #0003":"none"}}>
                   {t.charAt(0).toUpperCase()+t.slice(1)}
                 </button>
@@ -1085,6 +1526,10 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                   <button className="tap" onClick={resetApp} style={{flex:1,padding:"14px",borderRadius:14,border:"1.5px solid #fee2e2",background:"white",color:"#ef4444",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Reset</button>
                 </div>
               </div>
+            )}
+
+            {st.tab==="brain"&&(
+              <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} S={S} />
             )}
 
             {st.tab==="impact"&&(
@@ -1152,7 +1597,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             )}
 
             <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(250,250,248,0.94)",backdropFilter:"blur(16px)",borderTop:"1px solid #eeece8",padding:"10px 24px",display:"flex",justifyContent:"space-around",zIndex:100}}>
-              {[{icon:"🏠",label:"Home",action:()=>goTo("habits")},{icon:"📊",label:"Today",action:()=>{update({tab:"today"});goTo("dashboard");}},{icon:"🎯",label:"Pillars",action:()=>{update({tab:"pillars"});goTo("dashboard");}},{icon:"📅",label:"History",action:()=>{update({tab:"history"});goTo("dashboard");}}].map(item=>(
+              {[{icon:"🏠",label:"Home",action:()=>goTo("habits")},{icon:"📚",label:"Explore",action:()=>goTo("explore")},{icon:"🎯",label:"Pillars",action:()=>{update({tab:"pillars"});goTo("dashboard");}},{icon:"📊",label:"Dashboard",action:()=>{update({tab:"today"});goTo("dashboard");}}].map(item=>(
                 <button key={item.label} className="tap" onClick={item.action} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px"}}>
                   <span style={{fontSize:22}}>{item.icon}</span>
                   <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",letterSpacing:0.5,textTransform:"uppercase"}}>{item.label}</span>
