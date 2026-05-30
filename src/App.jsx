@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // ── API CONFIG ───────────────────────────────────────────
-const API = "https://coresix-backend.onrender.com";
+const API = "https://coresix-backend-production.up.railway.app";
 
 // Generate or get device ID — persists in localStorage
 const getDeviceId = () => {
