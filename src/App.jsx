@@ -1061,7 +1061,16 @@ export default function App() {
     const today = new Date().toDateString();
     const dayOfWeek = new Date().getDay(); // 6 = Saturday
     if (st.lastDate && st.lastDate!==today) {
-      update({checkedToday:Object.fromEntries(PIDS.map(p=>[p,false]))});
+      // New day — reset check-ins and meal log
+      update({
+        checkedToday: Object.fromEntries(PIDS.map(p=>[p,false])),
+        fuel: {
+          ...st.fuel,
+          meals: (st.fuel?.meals||[]).filter(m=>m.date===today), // keep only today
+          waterGlasses: 0,
+          waterDate: today,
+        }
+      });
     }
     // Show weekly check-in on Saturday if not done this week
     const thisWeek = getWeekKey();
