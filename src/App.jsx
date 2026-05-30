@@ -459,16 +459,63 @@ function CoachCard({ icon, title, message, color="#6D28D9", bg="linear-gradient(
 }
 
 // ── FUEL LAYER COMPONENT ─────────────────────────────────
-function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
+function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAIInsight }) {
   const [view, setView] = useState("dashboard"); // dashboard | setup | log | photo
   const [logSearch, setLogSearch] = useState("");
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoResult, setPhotoResult] = useState(null);
   const [customMeal, setCustomMeal] = useState({name:"",cal:"",protein:"",carbs:"",fat:"",fiber:""});
+  const [fuelInsight, setFuelInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  // Analyse how meal data relates to the current Fuel habit
+  const analyzeFuelHabit = () => {
+    if (!fuelHabit) return null;
+    const habit = fuelHabit.toLowerCase();
+    const mealCount = todayMeals.length;
+    const proteinPct = targets.protein > 0 ? Math.round((totals.protein/targets.protein)*100) : 0;
+    const calPct = targets.calories > 0 ? Math.round((totals.cal/targets.calories)*100) : 0;
+    const fiberPct = (targets.fiber||28) > 0 ? Math.round((totals.fiber/(targets.fiber||28))*100) : 0;
+
+    // Match habit to tracked data
+    if (habit.includes("3 meals") || habit.includes("3 structured")) {
+      return { goal:`3 meals today`, actual:`${mealCount} meals logged`, met: mealCount >= 3 };
+    } else if (habit.includes("2 meals") || habit.includes("2-3")) {
+      return { goal:`2-3 meals today`, actual:`${mealCount} meals logged`, met: mealCount >= 2 && mealCount <= 3 };
+    } else if (habit.includes("protein")) {
+      return { goal:`Hit protein target`, actual:`${proteinPct}% of protein goal`, met: proteinPct >= 90 };
+    } else if (habit.includes("water") || habit.includes("glass")) {
+      const waterPct = Math.round((waterToday/8)*100);
+      return { goal:`8 glasses of water`, actual:`${waterToday} glasses today`, met: waterToday >= 8 };
+    } else if (habit.includes("calori") || habit.includes("track")) {
+      return { goal:`Track all meals`, actual:`${mealCount} meals logged`, met: mealCount >= 2 };
+    }
+    return { goal:fuelHabit, actual:`${mealCount} meals logged`, met: mealCount >= 2 };
+  };
+
+  const getFuelAIInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const habitAnalysis = analyzeFuelHabit();
+    const context = {
+      habit: fuelHabit,
+      meals_logged: todayMeals.length,
+      meal_names: todayMeals.map(m=>m.name).join(", "),
+      calories_pct: targets.calories > 0 ? Math.round((totals.cal/targets.calories)*100) : 0,
+      protein_pct: targets.protein > 0 ? Math.round((totals.protein/targets.protein)*100) : 0,
+      fiber_pct: (targets.fiber||28) > 0 ? Math.round((totals.fiber/(targets.fiber||28))*100) : 0,
+      water_glasses: waterToday,
+      habit_met: habitAnalysis?.met,
+    };
+    // Build a specific prompt
+    const insight = await fetchAIInsight("fuel_insight", JSON.stringify(context));
+    setFuelInsight(insight || "Keep logging your meals — every entry builds a clearer picture of your nutrition.");
+    setInsightLoading(false);
+  };
 
   const fuel = st.fuel || {};
   const targets = fuel.targets || {calories:2000,protein:150,carbs:200,fat:67,fiber:28};
-  const today = new Date().toDateString();
+  const today = new Date().toISOString().split('T')[0];
   const todayMeals = (fuel.meals||[]).filter(m=>m.date===today);
 
   // Totals for today
@@ -736,6 +783,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
   );
 
   // ── DASHBOARD ──
+  const habitAnalysis = analyzeFuelHabit();
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       {/* Header */}
@@ -748,6 +796,22 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
           ⚙️ Targets
         </button>
       </div>
+
+      {/* Today's Fuel habit connection */}
+      {fuelHabit && (
+        <div style={{background:habitAnalysis?.met?"linear-gradient(135deg,#ECFDF5,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${habitAnalysis?.met?"#A7F3D0":"#FDE68A"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Fuel Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{fuelHabit}"</div>
+          {habitAnalysis && (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{habitAnalysis.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:habitAnalysis.met?"#10B981":"#F59E0B",fontWeight:600}}>
+                {habitAnalysis.actual} — {habitAnalysis.met ? "Habit goal met!" : `Goal: ${habitAnalysis.goal}`}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Calories ring */}
       <div style={{...S.card,display:"flex",alignItems:"center",gap:16,border:"1.5px solid #FDE68A"}}>
@@ -846,6 +910,8 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
         </div>
       )}
 
+
+
       {/* Daily summary */}
       {todayMeals.length > 0 && (
         <div style={{background:"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"16px",border:"1px solid #FDE68A"}}>
@@ -875,6 +941,22 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
           </div>
         </div>
       )}
+
+      {/* AI Insight — connected to habit + meal data */}
+      <div style={{...S.card,border:"1.5px solid #DDD6FE",background:"linear-gradient(135deg,#F5F3FF,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Fuel Coach</div>
+        {fuelInsight ? (
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{fuelInsight}"</p>
+        ) : (
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Log your meals first — then get a personalised insight based on your habit and nutrition data.
+          </p>
+        )}
+        <button onClick={getFuelAIInsight} disabled={insightLoading||todayMeals.length===0}
+          style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 4px 12px #8B5CF644"),padding:"11px",fontSize:13,opacity:(insightLoading||todayMeals.length===0)?0.5:1}}>
+          {insightLoading ? "Thinking..." : todayMeals.length===0 ? "Log meals first to unlock" : fuelInsight ? "Get New Insight →" : "Analyse My Fuel Day →"}
+        </button>
+      </div>
 
       {/* Back to habits */}
       {goToHabits && (
@@ -1058,21 +1140,36 @@ export default function App() {
   const stage = getStage(st.streak);
 
   useEffect(()=>{
-    const today = new Date().toDateString();
-    const dayOfWeek = new Date().getDay(); // 6 = Saturday
-    if (st.lastDate && st.lastDate!==today) {
-      // New day — reset check-ins, meal log and water
+    // Always compare using simple YYYY-MM-DD format
+    const todayStr = new Date().toISOString().slice(0,10);
+    const dayOfWeek = new Date().getDay();
+
+    // Normalize lastDate to YYYY-MM-DD no matter what format it was saved in
+    let lastStr = null;
+    if (st.lastDate) {
+      try {
+        lastStr = new Date(st.lastDate).toISOString().slice(0,10);
+      } catch {
+        lastStr = null;
+      }
+    }
+
+    const isNewDay = !lastStr || lastStr !== todayStr;
+
+    if (isNewDay) {
+      // Reset everything for the new day
       update({
         checkedToday: Object.fromEntries(PIDS.map(p=>[p,false])),
         fuel: {
-          ...st.fuel,
-          meals: (st.fuel?.meals||[]).filter(m=>m.date===today),
+          ...(st.fuel||{}),
+          meals: [],
           waterGlasses: 0,
-          waterDate: "",  // empty so waterToday = 0
+          waterDate: "",
         }
       });
     }
-    // Show weekly check-in on Saturday if not done this week
+
+    // Show weekly check-in on Saturday
     const thisWeek = getWeekKey();
     const alreadyDone = st.impactHistory?.some(h=>h.week===thisWeek);
     if (dayOfWeek===6 && !alreadyDone && st.streak>0) {
@@ -1224,7 +1321,7 @@ export default function App() {
   // ── CHECK IN ──
   const handleCheckIn = pid => {
     const newChecked = {...st.checkedToday,[pid]:true};
-    const today = new Date().toDateString();
+    const today = new Date().toISOString().split('T')[0]; // ISO format: 2026-05-30
     const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],days:st.ladder[pid].days+1}};
     const allDone = activePids.every(p=>p===pid||newChecked[p]);
     const newStreak = allDone ? st.streak+1 : st.streak;
@@ -1819,7 +1916,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <FuelLayer st={st} update={update} S={S} onMealAdded={(msg)=>showToast(msg)} goToHabits={()=>goTo("habits")}/>
+            <FuelLayer st={st} update={update} S={S} onMealAdded={(msg)=>showToast(msg)} goToHabits={()=>goTo("habits")} fuelHabit={st.ladder?.fuel?.selected} fetchAIInsight={fetchAIInsight}/>
           </div>
         )}
 
