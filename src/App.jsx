@@ -457,7 +457,7 @@ function CoachCard({ icon, title, message, color="#6D28D9", bg="linear-gradient(
 }
 
 // ── FUEL LAYER COMPONENT ─────────────────────────────────
-function FuelLayer({ st, update, S }) {
+function FuelLayer({ st, update, S, onMealAdded, goToHabits }) {
   const [view, setView] = useState("dashboard"); // dashboard | setup | log | photo
   const [logSearch, setLogSearch] = useState("");
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -482,9 +482,18 @@ function FuelLayer({ st, update, S }) {
 
   const addMeal = (meal) => {
     const newMeals = [...(fuel.meals||[]), {...meal, date:today, time:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}];
-    update({fuel:{...fuel, meals:newMeals.slice(-50)}});
+    const newFuel = {...fuel, meals:newMeals.slice(-50)};
+    update({fuel:newFuel});
     setView("dashboard");
     setLogSearch("");
+    // Show confirmation
+    const newTotals = newMeals.filter(m=>m.date===today).reduce((acc,m)=>({
+      cal:acc.cal+(m.cal||0), protein:acc.protein+(m.protein||0)
+    }),{cal:0,protein:0});
+    const targets = fuel.targets||{calories:2000,protein:150};
+    const proteinPct = Math.round((newTotals.protein/targets.protein)*100);
+    const calPct = Math.round((newTotals.cal/targets.calories)*100);
+    if (onMealAdded) onMealAdded(`✅ ${meal.name} logged! Protein: ${proteinPct}% · Calories: ${calPct}% of daily goal`);
   };
 
   const addWater = () => {
@@ -833,6 +842,38 @@ function FuelLayer({ st, update, S }) {
         </div>
       )}
 
+      {/* Daily summary */}
+      {todayMeals.length > 0 && (
+        <div style={{background:"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"16px",border:"1px solid #FDE68A"}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#92400E",marginBottom:10}}>Today's summary</div>
+          <div style={{display:"flex",gap:12,marginBottom:12}}>
+            {[
+              {l:"Calories",v:totals.cal,t:targets.calories,u:"kcal",c:"#F59E0B"},
+              {l:"Protein", v:totals.protein,t:targets.protein,u:"g",c:"#10B981"},
+              {l:"Carbs",   v:totals.carbs,t:targets.carbs,u:"g",c:"#0EA5E9"},
+              {l:"Fat",     v:totals.fat,t:targets.fat,u:"g",c:"#8B5CF6"},
+            ].map(m=>(
+              <div key={m.l} style={{flex:1,textAlign:"center"}}>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:14,color:m.c}}>{Math.round((m.v/m.t)*100)}%</div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#bbb",textTransform:"uppercase",letterSpacing:0.5}}>{m.l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#92400E",lineHeight:1.6,fontStyle:"italic"}}>
+            {totals.protein >= targets.protein
+              ? "🎯 Protein target reached! Your Fuel habit is working."
+              : `${targets.protein - totals.protein}g protein remaining to hit your daily target.`}
+          </div>
+        </div>
+      )}
+
+      {/* Back to habits */}
+      {goToHabits && (
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>
+          ← Back to Habits
+        </button>
+      )}
+
       {/* Setup prompt if not set up */}
       {!fuel.setup && (
         <div style={{background:"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"16px",border:"1px solid #FDE68A"}}>
@@ -1002,6 +1043,7 @@ export default function App() {
   const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
+  const [toast, setToast] = useState(null); // {message, color}
   const [lastQPid, setLastQPid] = useState(null);
 
   const stage = getStage(st.streak);
@@ -1079,6 +1121,11 @@ export default function App() {
     const id = localStorage.getItem("coresix_device_id");
     if (!id) return null;
     return await api("GET", `/api/analytics/${id}`);
+  };
+
+  const showToast = (message, color="#10B981", duration=3000) => {
+    setToast({message, color});
+    setTimeout(()=>setToast(null), duration);
   };
 
   const resetApp = () => {
@@ -1272,6 +1319,13 @@ export default function App() {
       {confetti.map(c=>(
         <div key={c.id} style={{position:"fixed",left:`${c.x}%`,top:`${c.y}%`,width:c.size,height:c.size,borderRadius:"50%",background:c.color,"--vx":`${c.vx}px`,"--vy":`${c.vy}px`,animation:"confetti 1.4s ease-out forwards",pointerEvents:"none",zIndex:999}}/>
       ))}
+
+      {/* ── TOAST NOTIFICATION ── */}
+      {toast && (
+        <div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:500,background:toast.color||"#10B981",color:"white",borderRadius:16,padding:"14px 24px",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:14,boxShadow:"0 8px 32px rgba(0,0,0,0.2)",animation:"slideUp 0.3s ease",maxWidth:380,textAlign:"center"}}>
+          {toast.message}
+        </div>
+      )}
 
       {/* ── WEEKLY CHECK-IN OVERLAY ── */}
       {st.showWeeklyCheckin && st.screen!=="splash" && (
@@ -1747,7 +1801,7 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <FuelLayer st={st} update={update} S={S}/>
+            <FuelLayer st={st} update={update} S={S} onMealAdded={(msg)=>showToast(msg)} goToHabits={()=>goTo("habits")}/>
           </div>
         )}
 
