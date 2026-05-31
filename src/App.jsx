@@ -462,8 +462,23 @@ const initState = () => ({
   },
   move:{
     stepGoal:7000, stepsToday:0, stepsDate:"",
-    workouts:[], // [{date, name, emoji, duration, sets, unit, calories}]
+    workouts:[],
   },
+  rest:{
+    bedtime:"", wakeTime:"", sleepDate:"",
+    quality:0, // 1-5
+    windDown:[], // completed wind-down items
+    sleepHistory:[], // [{date, hours, quality, windDownCount}]
+  },
+  calm:{stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""},
+  connect:{
+    connections:[],     // [{date, name, type, quality, note}]
+    socialBattery:0,    // 1-10 energy level
+    kindness:[],        // acts of kindness done today
+    relationships:[],   // [{name, lastContact, importance, notes}]
+    connectDate:"",
+  },
+  focus:{mit:"",pomodoros:0,pomodoroMins:25,distractions:[],deepWorkMins:0,energyLevel:0,tasks:[],weeklyGoals:[],focusDate:""},
 });
 
 // Migrate old state — add fuel if missing
@@ -480,6 +495,10 @@ const migrateState = (s) => {
   if (!s.fuel.targets) s.fuel.targets = {calories:2000,protein:150,carbs:200,fat:67,fiber:28};
   if (s.fuel.targets && !s.fuel.targets.fiber) s.fuel.targets.fiber = 28;
   if (!s.move) s.move = {stepGoal:7000,stepsToday:0,stepsDate:"",workouts:[]};
+  if (!s.rest) s.rest = {bedtime:"",wakeTime:"",sleepDate:"",quality:0,windDown:[],sleepHistory:[]};
+  if (!s.calm) s.calm = {stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""};
+  if (!s.connect) s.connect = {connections:[],socialBattery:0,kindness:[],relationships:[],connectDate:""};
+  if (!s.focus) s.focus = {mit:"",pomodoros:0,pomodoroMins:25,distractions:[],deepWorkMins:0,energyLevel:0,tasks:[],weeklyGoals:[],focusDate:""};
   return s;
 };
 
@@ -1324,6 +1343,1214 @@ function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
   );
 }
 
+
+// ── REST LAYER COMPONENT ──────────────────────────────────
+const WIND_DOWN_ITEMS = [
+  { id:"phone",    emoji:"📵", label:"Phone in another room" },
+  { id:"screens",  emoji:"🖥️", label:"All screens off 30 min before bed" },
+  { id:"dim",      emoji:"💡", label:"Dimmed lights in the evening" },
+  { id:"caffeine", emoji:"☕", label:"No caffeine after 2pm" },
+  { id:"temp",     emoji:"🌡️", label:"Bedroom cool and dark" },
+  { id:"journal",  emoji:"📓", label:"Wrote tomorrow's top task" },
+  { id:"breathe",  emoji:"🌬️", label:"Did a breathing exercise" },
+  { id:"read",     emoji:"📖", label:"Read a book instead of scrolling" },
+];
+
+function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits }) {
+  const [view, setView] = useState("dashboard");
+  const [restInsight, setRestInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [bedtime, setBedtime] = useState("");
+  const [wakeTime, setWakeTime] = useState("");
+
+  const rest = st.rest || {};
+  const today = new Date().toISOString().slice(0,10);
+  const windDone = rest.windDown || [];
+  const windPct = Math.round((windDone.length / WIND_DOWN_ITEMS.length) * 100);
+
+  // Calculate sleep hours
+  const calcSleepHours = (bed, wake) => {
+    if (!bed || !wake) return 0;
+    const [bh, bm] = bed.split(":").map(Number);
+    const [wh, wm] = wake.split(":").map(Number);
+    let hours = wh - bh + (wm - bm) / 60;
+    if (hours < 0) hours += 24;
+    return Math.round(hours * 10) / 10;
+  };
+
+  const sleepHours = calcSleepHours(rest.bedtime, rest.wakeTime);
+  const sleepScore = () => {
+    if (!sleepHours) return 0;
+    let score = 0;
+    if (sleepHours >= 7 && sleepHours <= 9) score += 40;
+    else if (sleepHours >= 6) score += 25;
+    else score += 10;
+    score += (rest.quality || 0) * 8;
+    score += Math.round(windDone.length * 2.5);
+    return Math.min(100, score);
+  };
+
+  const score = sleepScore();
+  const scoreColor = score >= 80 ? "#10B981" : score >= 60 ? "#F59E0B" : "#EF4444";
+  const scoreLabel = score >= 80 ? "Excellent" : score >= 60 ? "Good" : score >= 40 ? "Fair" : "Needs work";
+
+  const analyzeRest = () => {
+    if (!restHabit) return null;
+    const habit = restHabit.toLowerCase();
+    if (habit.includes("phone") || habit.includes("screen")) {
+      const done = windDone.includes("phone") || windDone.includes("screens");
+      return { goal:"No screens before bed", actual: done ? "Done ✓" : "Not done yet", met: done };
+    } else if (habit.includes("bed") && (habit.includes("time") || habit.includes("same"))) {
+      const done = !!rest.bedtime;
+      return { goal:"Consistent bedtime", actual: done ? `Logged: ${rest.bedtime}` : "Not logged", met: done };
+    } else if (habit.includes("wake") || habit.includes("morning")) {
+      const done = !!rest.wakeTime;
+      return { goal:"Consistent wake time", actual: done ? `Woke at: ${rest.wakeTime}` : "Not logged", met: done };
+    } else if (habit.includes("7") || habit.includes("8") || habit.includes("hour")) {
+      const target = habit.includes("8") ? 8 : 7;
+      return { goal:`${target}+ hours sleep`, actual: sleepHours ? `${sleepHours} hours` : "Not tracked", met: sleepHours >= target };
+    } else if (habit.includes("wind") || habit.includes("routine")) {
+      return { goal:"Wind-down routine", actual: `${windDone.length}/${WIND_DOWN_ITEMS.length} done`, met: windDone.length >= 4 };
+    }
+    return { goal: restHabit, actual: sleepHours ? `${sleepHours}h sleep` : "Not tracked", met: sleepHours >= 7 };
+  };
+
+  const getRestInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const ha = analyzeRest();
+    const context = JSON.stringify({
+      habit: restHabit,
+      sleep_hours: sleepHours,
+      sleep_quality: rest.quality,
+      sleep_score: score,
+      wind_down_completed: windDone.length,
+      wind_down_total: WIND_DOWN_ITEMS.length,
+      bedtime: rest.bedtime,
+      wake_time: rest.wakeTime,
+      habit_met: ha?.met,
+    });
+    const insight = await fetchAIInsight("rest_insight", context);
+    setRestInsight(insight || "Quality sleep is the foundation of everything. Protect it tonight.");
+    setInsightLoading(false);
+  };
+
+  const ha = analyzeRest();
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:24,color:"#0f0f0f"}}>😴 Rest</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Sleep tracking & wind-down</div>
+        </div>
+        {score > 0 && (
+          <div style={{textAlign:"center"}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:scoreColor,lineHeight:1}}>{score}</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>{scoreLabel}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Rest habit connection */}
+      {restHabit && (
+        <div style={{background:ha?.met?"linear-gradient(135deg,#F5F3FF,white)":"linear-gradient(135deg,#FAF5FF,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#DDD6FE":"#EDE9FE"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Rest Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{restHabit}"</div>
+          {ha && (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#8B5CF6":"#F59E0B",fontWeight:600}}>
+                {ha.actual} — {ha.met?"Habit goal met!":ha.goal}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sleep tracker */}
+      <div style={{...S.card,border:"1.5px solid #DDD6FE"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:12}}>🌙 Last Night's Sleep</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginBottom:6}}>Bedtime</div>
+            <input type="time" value={rest.bedtime||""} onChange={e=>update({rest:{...rest,bedtime:e.target.value}})}
+              style={{...S.input,padding:"10px 12px",fontSize:15,textAlign:"center"}}/>
+          </div>
+          <div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginBottom:6}}>Wake time</div>
+            <input type="time" value={rest.wakeTime||""} onChange={e=>update({rest:{...rest,wakeTime:e.target.value}})}
+              style={{...S.input,padding:"10px 12px",fontSize:15,textAlign:"center"}}/>
+          </div>
+        </div>
+        {sleepHours > 0 && (
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px",background:"#F5F3FF",borderRadius:12,marginBottom:12}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:32,color:"#8B5CF6",lineHeight:1}}>{sleepHours}h</div>
+            <div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>
+                {sleepHours >= 8 ? "Excellent sleep! 🌟" : sleepHours >= 7 ? "Good sleep ✅" : sleepHours >= 6 ? "Fair — aim for 7+ hours" : "Too little sleep ⚠️"}
+              </div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginTop:2}}>
+                {sleepHours >= 7 ? "Your brain is recharged" : "Try an earlier bedtime tonight"}
+              </div>
+            </div>
+          </div>
+        )}
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginBottom:8}}>Sleep quality</div>
+        <div style={{display:"flex",gap:8}}>
+          {[1,2,3,4,5].map(n=>(
+            <button key={n} onClick={()=>update({rest:{...rest,quality:n}})}
+              style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${(rest.quality||0)>=n?"#8B5CF6":"#e8e8e8"}`,background:(rest.quality||0)>=n?"#F5F3FF":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:16,cursor:"pointer",transition:"all 0.2s"}}>
+              {n<=2?"😴":n<=3?"😐":n<=4?"😊":"⭐"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Wind-down routine */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>🌙 Wind-Down Routine</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#8B5CF6",fontWeight:600}}>{windDone.length}/{WIND_DOWN_ITEMS.length}</div>
+        </div>
+        <div style={{background:"#f0f0f0",borderRadius:6,height:6,overflow:"hidden",marginBottom:12}}>
+          <div style={{height:"100%",borderRadius:6,background:"linear-gradient(90deg,#8B5CF6,#A78BFA)",width:`${windPct}%`,transition:"width 0.4s ease"}}/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {WIND_DOWN_ITEMS.map(item=>{
+            const done = windDone.includes(item.id);
+            return (
+              <button key={item.id} onClick={()=>{
+                const newDone = done ? windDone.filter(x=>x!==item.id) : [...windDone, item.id];
+                update({rest:{...rest, windDown:newDone}});
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:`1.5px solid ${done?"#DDD6FE":"#f0f0f0"}`,background:done?"#F5F3FF":"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                <div style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${done?"#8B5CF6":"#ddd"}`,background:done?"#8B5CF6":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.2s"}}>
+                  {done&&<div style={{color:"white",fontSize:12}}>✓</div>}
+                </div>
+                <span style={{fontSize:18,flexShrink:0}}>{item.emoji}</span>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:done?"#8B5CF6":"#444",fontWeight:done?600:400,textDecoration:done?"line-through":"none"}}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sleep score breakdown */}
+      {score > 0 && (
+        <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"16px",border:"1px solid #DDD6FE"}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#6D28D9",marginBottom:10}}>Sleep Score Breakdown</div>
+          <div style={{display:"flex",gap:12}}>
+            {[
+              {l:"Duration",v:sleepHours?`${sleepHours}h`:"—",c:"#8B5CF6"},
+              {l:"Quality",v:rest.quality?`${rest.quality}/5`:"—",c:"#8B5CF6"},
+              {l:"Routine",v:`${windDone.length}/${WIND_DOWN_ITEMS.length}`,c:"#8B5CF6"},
+            ].map(m=>(
+              <div key={m.l} style={{flex:1,textAlign:"center"}}>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:16,color:m.c}}>{m.v}</div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#bbb",textTransform:"uppercase",letterSpacing:0.5}}>{m.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Rest Coach */}
+      <div style={{...S.card,border:"1.5px solid #DDD6FE",background:"linear-gradient(135deg,#F5F3FF,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Rest Coach</div>
+        {restInsight?(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{restInsight}"</p>
+        ):(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Log your sleep times or complete wind-down items to unlock your personalised insight.
+          </p>
+        )}
+        <button onClick={getRestInsight} disabled={insightLoading||(!sleepHours&&windDone.length===0)}
+          style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 4px 12px #8B5CF644"),padding:"11px",fontSize:13,opacity:(insightLoading||(!sleepHours&&windDone.length===0))?0.5:1}}>
+          {insightLoading?"Thinking...":(!sleepHours&&windDone.length===0)?"Log sleep first to unlock":restInsight?"Get New Insight →":"Analyse My Sleep →"}
+        </button>
+      </div>
+
+      {goToHabits&&(
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>← Back to Habits</button>
+      )}
+    </div>
+  );
+}
+
+
+
+// ── CALM LAYER COMPONENT ──────────────────────────────────
+const CALM_ACTIVITIES = [
+  { id:"breathing",   emoji:"🌬️", label:"4-7-8 Breathing",        desc:"4 in · 7 hold · 8 out",     mins:2,  type:"breath" },
+  { id:"box",         emoji:"📦", label:"Box Breathing",           desc:"4 in · 4 hold · 4 out · 4 hold", mins:3, type:"breath" },
+  { id:"meditation",  emoji:"🧘", label:"Meditation",              desc:"Sit in stillness",           mins:10, type:"meditate" },
+  { id:"gratitude",   emoji:"🙏", label:"Gratitude practice",      desc:"Write 3 things",             mins:3,  type:"journal" },
+  { id:"nature",      emoji:"🌿", label:"Time in nature",          desc:"Walk outside, no phone",     mins:10, type:"outdoor" },
+  { id:"music",       emoji:"🎵", label:"Calming music",           desc:"Slow, instrumental",         mins:10, type:"relax" },
+  { id:"journal",     emoji:"📓", label:"Journaling",              desc:"Write how you feel",         mins:5,  type:"journal" },
+  { id:"body_scan",   emoji:"👁️", label:"Body scan",               desc:"Notice tension, release it", mins:5,  type:"meditate" },
+  { id:"cold_water",  emoji:"💧", label:"Cold water on face",      desc:"Activates dive reflex",      mins:1,  type:"physical" },
+  { id:"stretch",     emoji:"🤸", label:"Gentle stretching",       desc:"Release muscle tension",     mins:5,  type:"physical" },
+  { id:"tea",         emoji:"🍵", label:"Herbal tea ritual",       desc:"Slow down, be present",      mins:5,  type:"relax" },
+  { id:"sunlight",    emoji:"☀️", label:"Morning sunlight",        desc:"10 min outside",             mins:10, type:"outdoor" },
+];
+
+const MOODS = [
+  { emoji:"😰", label:"Anxious",  color:"#EF4444" },
+  { emoji:"😔", label:"Low",      color:"#6B7280" },
+  { emoji:"😐", label:"Neutral",  color:"#F59E0B" },
+  { emoji:"🙂", label:"Okay",     color:"#10B981" },
+  { emoji:"😊", label:"Good",     color:"#10B981" },
+  { emoji:"🌟", label:"Great",    color:"#8B5CF6" },
+];
+
+function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits }) {
+  const [view, setView] = useState("dashboard");
+  const [calmInsight, setCalmInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [gratitudeInput, setGratitudeInput] = useState("");
+  const [timer, setTimer] = useState(null);
+  const [timerSecs, setTimerSecs] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+
+  const calm = st.calm || {};
+  const today = new Date().toISOString().slice(0,10);
+  const doneFull = calm.calmActivities || [];
+  const gratitude = calm.gratitude || [];
+  const stressLevel = calm.stressLevel || 0;
+
+  const stressColor = stressLevel >= 8 ? "#EF4444" : stressLevel >= 6 ? "#F59E0B" : stressLevel >= 4 ? "#10B981" : "#8B5CF6";
+  const stressLabel = stressLevel >= 8 ? "High stress" : stressLevel >= 6 ? "Moderate" : stressLevel >= 4 ? "Manageable" : stressLevel > 0 ? "Low stress" : "Not rated";
+
+  const analyzeCalm = () => {
+    if (!calmHabit) return null;
+    const habit = calmHabit.toLowerCase();
+    if (habit.includes("breath")) {
+      const done = doneFull.includes("breathing") || doneFull.includes("box");
+      return { goal:"Breathing exercise", actual: done ? "Done ✓" : "Not done yet", met: done };
+    } else if (habit.includes("meditat")) {
+      const done = doneFull.includes("meditation") || doneFull.includes("body_scan");
+      return { goal:"Meditation", actual: done ? "Done ✓" : "Not done yet", met: done };
+    } else if (habit.includes("gratitude") || habit.includes("grateful")) {
+      return { goal:"Gratitude practice", actual: gratitude.length > 0 ? `${gratitude.length} entries` : "Not done", met: gratitude.length >= 1 };
+    } else if (habit.includes("outside") || habit.includes("nature") || habit.includes("walk")) {
+      const done = doneFull.includes("nature") || doneFull.includes("sunlight");
+      return { goal:"Time in nature", actual: done ? "Done ✓" : "Not done yet", met: done };
+    } else if (habit.includes("journal")) {
+      const done = doneFull.includes("journal") || gratitude.length > 0;
+      return { goal:"Journaling", actual: done ? "Done ✓" : "Not done yet", met: done };
+    }
+    return { goal: calmHabit, actual: doneFull.length > 0 ? `${doneFull.length} activity done` : "Nothing done yet", met: doneFull.length > 0 };
+  };
+
+  const startTimer = (mins) => {
+    setTimerSecs(mins * 60);
+    setTimerRunning(true);
+    const interval = setInterval(() => {
+      setTimerSecs(prev => {
+        if (prev <= 1) { clearInterval(interval); setTimerRunning(false); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    setTimer(interval);
+  };
+
+  const formatTime = (secs) => `${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`;
+
+  const getCalmInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const ha = analyzeCalm();
+    const context = JSON.stringify({
+      habit: calmHabit,
+      stress_level: stressLevel,
+      mood: calm.mood,
+      activities_done: doneFull,
+      gratitude_count: gratitude.length,
+      habit_met: ha?.met,
+    });
+    const insight = await fetchAIInsight("calm_insight", context);
+    setCalmInsight(insight || "Calm is not the absence of stress — it is the ability to respond to it with intention.");
+    setInsightLoading(false);
+  };
+
+  const ha = analyzeCalm();
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:24,color:"#0f0f0f"}}>🧘 Calm</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Stress · Breathing · Mind</div>
+        </div>
+        {stressLevel > 0 && (
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:stressColor,lineHeight:1}}>{stressLevel}/10</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>{stressLabel}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Calm habit */}
+      {calmHabit && (
+        <div style={{background:ha?.met?"linear-gradient(135deg,#F0F9FF,white)":"linear-gradient(135deg,#F0F9FF,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#BAE6FD":"#BAE6FD"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Calm Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{calmHabit}"</div>
+          {ha && (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#0EA5E9":"#F59E0B",fontWeight:600}}>
+                {ha.actual} — {ha.met?"Habit goal met!":ha.goal}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stress level */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:10}}>How stressed are you today?</div>
+        <div style={{display:"flex",gap:4,marginBottom:8}}>
+          {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+            <button key={n} onClick={()=>update({calm:{...calm,stressLevel:n}})}
+              style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${stressLevel===n?(n>=7?"#EF4444":n>=4?"#F59E0B":"#10B981"):"#e8e8e8"}`,background:stressLevel===n?(n>=7?"#FEF2F2":n>=4?"#FFFBEB":"#ECFDF5"):"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:stressLevel===n?(n>=7?"#EF4444":n>=4?"#F59E0B":"#10B981"):"#aaa",cursor:"pointer",transition:"all 0.2s"}}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>
+          <span>Calm</span><span>Very stressed</span>
+        </div>
+      </div>
+
+      {/* Mood */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:10}}>How are you feeling?</div>
+        <div style={{display:"flex",gap:8}}>
+          {MOODS.map(m=>(
+            <button key={m.label} onClick={()=>update({calm:{...calm,mood:m.label}})}
+              style={{flex:1,padding:"10px 4px",borderRadius:12,border:`1.5px solid ${calm.mood===m.label?m.color:"#e8e8e8"}`,background:calm.mood===m.label?m.color+"18":"white",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.2s"}}>
+              <span style={{fontSize:20}}>{m.emoji}</span>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:calm.mood===m.label?m.color:"#aaa",fontWeight:600}}>{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Calm activities */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>Calm Activities</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#0EA5E9",fontWeight:600}}>{doneFull.length}/{CALM_ACTIVITIES.length}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {CALM_ACTIVITIES.map(act=>{
+            const done = doneFull.includes(act.id);
+            return (
+              <button key={act.id} onClick={()=>{
+                const newDone = done ? doneFull.filter(x=>x!==act.id) : [...doneFull, act.id];
+                update({calm:{...calm, calmActivities:newDone}});
+                if (!done && (act.type==="breath"||act.type==="meditate")) startTimer(act.mins);
+              }} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:14,border:`1.5px solid ${done?"#BAE6FD":"#f0f0f0"}`,background:done?"#F0F9FF":"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                <div style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${done?"#0EA5E9":"#ddd"}`,background:done?"#0EA5E9":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.2s"}}>
+                  {done&&<div style={{color:"white",fontSize:11}}>✓</div>}
+                </div>
+                <span style={{fontSize:18,flexShrink:0}}>{act.emoji}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:done?"#0EA5E9":"#333",fontWeight:done?600:400,textDecoration:done?"line-through":"none"}}>{act.label}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>{act.desc} · {act.mins} min</div>
+                </div>
+                {(act.type==="breath"||act.type==="meditate")&&!done&&(
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#0EA5E9",background:"#F0F9FF",borderRadius:6,padding:"3px 7px",fontWeight:600}}>▶ Timer</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Timer */}
+      {timerSecs > 0 && (
+        <div style={{...S.card,textAlign:"center",border:"1.5px solid #BAE6FD",background:"linear-gradient(135deg,#F0F9FF,white)"}}>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:56,color:"#0EA5E9",lineHeight:1,marginBottom:8}}>{formatTime(timerSecs)}</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginBottom:12}}>
+            {timerRunning ? "Breathe. Be present." : "✅ Done! Well done."}
+          </div>
+          <button onClick={()=>{clearInterval(timer);setTimerSecs(0);setTimerRunning(false);}}
+            style={{...S.btnGhost,padding:"10px",fontSize:12}}>Stop</button>
+        </div>
+      )}
+
+      {/* Gratitude journal */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:10}}>🙏 Gratitude — 3 things today</div>
+        {gratitude.map((g,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"1px solid #f5f5f5"}}>
+            <span style={{color:"#10B981",fontSize:14}}>✓</span>
+            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444"}}>{g}</span>
+          </div>
+        ))}
+        {gratitude.length < 3 && (
+          <div style={{display:"flex",gap:8,marginTop:8}}>
+            <input value={gratitudeInput} onChange={e=>setGratitudeInput(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&gratitudeInput.trim()){update({calm:{...calm,gratitude:[...gratitude,gratitudeInput.trim()]}});setGratitudeInput("");}}}
+              placeholder={`I am grateful for...`}
+              style={{...S.input,padding:"10px 14px",fontSize:13,flex:1}}/>
+            <button onClick={()=>{if(gratitudeInput.trim()){update({calm:{...calm,gratitude:[...gratitude,gratitudeInput.trim()]}});setGratitudeInput("");}}}
+              style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#0EA5E9",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              Add
+            </button>
+          </div>
+        )}
+        {gratitude.length >= 3 && (
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#10B981",marginTop:8,fontWeight:600}}>🎯 Gratitude practice complete!</div>
+        )}
+      </div>
+
+      {/* AI Calm Coach */}
+      <div style={{...S.card,border:"1.5px solid #BAE6FD",background:"linear-gradient(135deg,#F0F9FF,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#0369A1",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Calm Coach</div>
+        {calmInsight?(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{calmInsight}"</p>
+        ):(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Rate your stress or complete a calm activity to unlock a personalised insight.
+          </p>
+        )}
+        <button onClick={getCalmInsight} disabled={insightLoading||(stressLevel===0&&doneFull.length===0)}
+          style={{...S.btn("linear-gradient(135deg,#0EA5E9,#38BDF8)","0 4px 12px #0EA5E944"),padding:"11px",fontSize:13,opacity:(insightLoading||(stressLevel===0&&doneFull.length===0))?0.5:1}}>
+          {insightLoading?"Thinking...":stressLevel===0&&doneFull.length===0?"Rate stress first to unlock":calmInsight?"Get New Insight →":"Analyse My Calm Day →"}
+        </button>
+      </div>
+
+      {goToHabits&&(
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>← Back to Habits</button>
+      )}
+    </div>
+  );
+}
+
+
+
+// ── CONNECT LAYER COMPONENT ───────────────────────────────
+const CONNECTION_TYPES = [
+  { id:"text",     emoji:"💬", label:"Text / Message" },
+  { id:"call",     emoji:"📞", label:"Phone call" },
+  { id:"video",    emoji:"📹", label:"Video call" },
+  { id:"inperson", emoji:"🤝", label:"In person" },
+  { id:"letter",   emoji:"✉️", label:"Letter / Note" },
+  { id:"voice",    emoji:"🎤", label:"Voice message" },
+];
+
+const KINDNESS_ACTS = [
+  { id:"compliment",  emoji:"💛", label:"Gave a genuine compliment" },
+  { id:"listen",      emoji:"👂", label:"Listened without interrupting" },
+  { id:"helped",      emoji:"🤲", label:"Helped someone today" },
+  { id:"thanked",     emoji:"🙏", label:"Expressed genuine gratitude" },
+  { id:"checked_in",  emoji:"💙", label:"Checked in on someone" },
+  { id:"remembered",  emoji:"🎂", label:"Remembered something important to them" },
+  { id:"encouraged",  emoji:"🌟", label:"Encouraged someone" },
+  { id:"apologized",  emoji:"🕊️", label:"Apologised or resolved something" },
+];
+
+function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits }) {
+  const [view, setView] = useState("dashboard");
+  const [connectInsight, setConnectInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [newConn, setNewConn] = useState({name:"", type:"text", quality:3, note:""});
+  const [newRel, setNewRel] = useState({name:"", importance:"close", notes:""});
+
+  const connect = st.connect || {};
+  const today = new Date().toISOString().slice(0,10);
+  const todayConns = (connect.connections||[]).filter(c=>c.date===today);
+  const kindness = connect.kindness || [];
+  const socialBattery = connect.socialBattery || 0;
+  const relationships = connect.relationships || [];
+
+  const batteryColor = socialBattery >= 7 ? "#10B981" : socialBattery >= 4 ? "#F59E0B" : socialBattery > 0 ? "#EF4444" : "#aaa";
+  const batteryLabel = socialBattery >= 7 ? "Energised" : socialBattery >= 4 ? "Okay" : socialBattery > 0 ? "Drained" : "Not rated";
+
+  const avgQuality = todayConns.length ? Math.round(todayConns.reduce((a,c)=>a+c.quality,0)/todayConns.length*10)/10 : 0;
+
+  const analyzeConnect = () => {
+    if (!connectHabit) return null;
+    const habit = connectHabit.toLowerCase();
+    if (habit.includes("message") || habit.includes("text")) {
+      return { goal:"Send a genuine message", actual: todayConns.length>0?`${todayConns.length} connection(s) logged`:"No connections yet", met: todayConns.length>0 };
+    } else if (habit.includes("call")) {
+      const called = todayConns.some(c=>c.type==="call"||c.type==="video");
+      return { goal:"Make a call", actual: called?"Call logged ✓":"No call yet", met: called };
+    } else if (habit.includes("person") || habit.includes("lunch") || habit.includes("dinner")) {
+      const met = todayConns.some(c=>c.type==="inperson");
+      return { goal:"In-person connection", actual: met?"In-person logged ✓":"Not done yet", met };
+    } else if (habit.includes("compliment") || habit.includes("kind")) {
+      return { goal:"Act of kindness", actual: kindness.length>0?`${kindness.length} act(s) done`:"None yet", met: kindness.length>0 };
+    } else if (habit.includes("thank") || habit.includes("gratitude")) {
+      const done = kindness.includes("thanked");
+      return { goal:"Express gratitude to someone", actual: done?"Done ✓":"Not done yet", met: done };
+    }
+    return { goal: connectHabit, actual: todayConns.length>0?`${todayConns.length} connection(s)`:"No connections yet", met: todayConns.length>0 };
+  };
+
+  const getConnectInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const ha = analyzeConnect();
+    const context = JSON.stringify({
+      habit: connectHabit,
+      connections_today: todayConns.length,
+      connection_types: todayConns.map(c=>c.type),
+      avg_quality: avgQuality,
+      kindness_done: kindness.length,
+      social_battery: socialBattery,
+      relationships_tracked: relationships.length,
+      habit_met: ha?.met,
+    });
+    const insight = await fetchAIInsight("connect_insight", context);
+    setConnectInsight(insight || "Every genuine connection you make today is an investment in your health — as powerful as any exercise.");
+    setInsightLoading(false);
+  };
+
+  const ha = analyzeConnect();
+
+  // ── ADD CONNECTION SCREEN ──
+  if (view==="add_connection") return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>←</button>
+        <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Log a Connection</h3>
+      </div>
+
+      <div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginBottom:6}}>Who did you connect with?</div>
+        <input value={newConn.name} onChange={e=>setNewConn(c=>({...c,name:e.target.value}))}
+          placeholder="Name or relationship (e.g. Mum, Ahmed, colleague)"
+          style={{...S.input,padding:"12px 16px"}}/>
+      </div>
+
+      <div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginBottom:8}}>How did you connect?</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {CONNECTION_TYPES.map(t=>(
+            <button key={t.id} onClick={()=>setNewConn(c=>({...c,type:t.id}))}
+              style={{padding:"10px",borderRadius:12,border:`1.5px solid ${newConn.type===t.id?"#EC4899":"#e8e8e8"}`,background:newConn.type===t.id?"#FDF2F8":"white",cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:newConn.type===t.id?"#EC4899":"#444",display:"flex",alignItems:"center",gap:8}}>
+              <span>{t.emoji}</span>{t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginBottom:6}}>Connection quality</div>
+        <div style={{display:"flex",gap:8}}>
+          {[1,2,3,4,5].map(n=>(
+            <button key={n} onClick={()=>setNewConn(c=>({...c,quality:n}))}
+              style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${newConn.quality===n?"#EC4899":"#e8e8e8"}`,background:newConn.quality===n?"#FDF2F8":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:16,cursor:"pointer"}}>
+              {n<=1?"😐":n<=2?"🙂":n<=3?"😊":n<=4?"💙":"💝"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginBottom:6}}>Note (optional)</div>
+        <input value={newConn.note} onChange={e=>setNewConn(c=>({...c,note:e.target.value}))}
+          placeholder="What did you talk about?"
+          style={{...S.input,padding:"12px 16px"}}/>
+      </div>
+
+      <button onClick={()=>{
+        if(!newConn.name) return;
+        const newConns=[...(connect.connections||[]),{...newConn,date:today,time:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}];
+        update({connect:{...connect,connections:newConns}});
+        setNewConn({name:"",type:"text",quality:3,note:""});
+        setView("dashboard");
+      }} style={S.btn("linear-gradient(135deg,#EC4899,#F472B6)","0 8px 24px #EC489944")}>
+        Log Connection →
+      </button>
+    </div>
+  );
+
+  // ── RELATIONSHIPS SCREEN ──
+  if (view==="relationships") return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>←</button>
+        <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>My Relationships</h3>
+      </div>
+      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Track your key relationships — who matters most in your life.</p>
+
+      {relationships.map((rel,i)=>{
+        const daysSince = rel.lastContact ? Math.floor((Date.now()-new Date(rel.lastContact))/(1000*60*60*24)) : null;
+        const urgency = daysSince===null?"never":daysSince>30?"overdue":daysSince>14?"soon":"recent";
+        const urgencyColor = {never:"#EF4444",overdue:"#EF4444",soon:"#F59E0B",recent:"#10B981"}[urgency];
+        return (
+          <div key={i} style={{...S.card,border:`1.5px solid ${urgencyColor}22`}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:44,height:44,borderRadius:12,background:"linear-gradient(135deg,#EC4899,#F472B6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,color:"white",fontFamily:"Fraunces,serif",fontWeight:800,flexShrink:0}}>
+                {rel.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{rel.name}</div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:urgencyColor,fontWeight:600}}>
+                  {daysSince===null?"Never contacted":daysSince===0?"Contacted today":`${daysSince} days ago`}
+                </div>
+              </div>
+              <button onClick={()=>{
+                const updated=[...relationships];
+                updated[i]={...updated[i],lastContact:today};
+                update({connect:{...connect,relationships:updated}});
+              }} style={{background:"#FDF2F8",border:"1.5px solid #FBCFE8",borderRadius:10,padding:"6px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#EC4899",cursor:"pointer"}}>
+                ✓ Just connected
+              </button>
+            </div>
+            {rel.notes&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888",marginTop:8,fontStyle:"italic"}}>{rel.notes}</p>}
+          </div>
+        );
+      })}
+
+      <div style={{...S.card,border:"1.5px dashed #FBCFE8"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#444",marginBottom:10}}>+ Add relationship to track</div>
+        <input value={newRel.name} onChange={e=>setNewRel(r=>({...r,name:e.target.value}))}
+          placeholder="Name" style={{...S.input,padding:"10px 14px",fontSize:13,marginBottom:8}}/>
+        <input value={newRel.notes} onChange={e=>setNewRel(r=>({...r,notes:e.target.value}))}
+          placeholder="Notes (optional)" style={{...S.input,padding:"10px 14px",fontSize:13,marginBottom:8}}/>
+        <button onClick={()=>{
+          if(!newRel.name) return;
+          update({connect:{...connect,relationships:[...relationships,{...newRel,lastContact:null}]}});
+          setNewRel({name:"",importance:"close",notes:""});
+        }} style={{...S.btn("linear-gradient(135deg,#EC4899,#F472B6)"),padding:"11px",fontSize:13}}>
+          Add
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── DASHBOARD ──
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:24,color:"#0f0f0f"}}>🤝 Connect</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Relationships · Kindness · Connection</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#EC4899",lineHeight:1}}>{todayConns.length}</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>connections</div>
+        </div>
+      </div>
+
+      {/* Connect habit */}
+      {connectHabit && (
+        <div style={{background:ha?.met?"linear-gradient(135deg,#FDF2F8,white)":"linear-gradient(135deg,#FDF2F8,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#FBCFE8":"#FBCFE8"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Connect Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{connectHabit}"</div>
+          {ha && (
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#EC4899":"#F59E0B",fontWeight:600}}>
+                {ha.actual} — {ha.met?"Habit goal met!":ha.goal}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Social battery */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:10}}>🔋 Social Battery — how connected do you feel?</div>
+        <div style={{display:"flex",gap:4,marginBottom:6}}>
+          {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+            <button key={n} onClick={()=>update({connect:{...connect,socialBattery:n}})}
+              style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${socialBattery===n?"#EC4899":"#e8e8e8"}`,background:socialBattery===n?"#FDF2F8":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:socialBattery===n?"#EC4899":"#aaa",cursor:"pointer",transition:"all 0.2s"}}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>
+          <span>Isolated</span><span>Energised</span>
+        </div>
+        {socialBattery>0&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:batteryColor,fontWeight:600,marginTop:8}}>{batteryLabel}</div>}
+      </div>
+
+      {/* Log connection button */}
+      <button onClick={()=>setView("add_connection")} style={{...S.btn("linear-gradient(135deg,#EC4899,#F472B6)","0 6px 18px #EC489944"),padding:"14px",fontSize:14}}>
+        🤝 Log a Connection
+      </button>
+
+      {/* Today's connections */}
+      {todayConns.length>0&&(
+        <div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Today's connections</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {todayConns.map((c,i)=>{
+              const ct = CONNECTION_TYPES.find(t=>t.id===c.type);
+              return (
+                <div key={i} style={{...S.card,display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1.5px solid #FBCFE8"}}>
+                  <span style={{fontSize:22}}>{ct?.emoji||"🤝"}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{c.name}</div>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{c.time} · {ct?.label} · Quality: {"💙".repeat(c.quality)}</div>
+                    {c.note&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888",fontStyle:"italic",marginTop:2}}>{c.note}</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {avgQuality>0&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#EC4899",fontWeight:600,marginTop:8}}>Avg connection quality: {avgQuality}/5</div>}
+        </div>
+      )}
+
+      {/* Acts of kindness */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>💛 Acts of Kindness</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#EC4899",fontWeight:600}}>{kindness.length}/{KINDNESS_ACTS.length}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {KINDNESS_ACTS.map(act=>{
+            const done = kindness.includes(act.id);
+            return (
+              <button key={act.id} onClick={()=>{
+                const newK = done ? kindness.filter(k=>k!==act.id) : [...kindness,act.id];
+                update({connect:{...connect,kindness:newK}});
+              }} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,border:`1.5px solid ${done?"#FBCFE8":"#f0f0f0"}`,background:done?"#FDF2F8":"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                <div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${done?"#EC4899":"#ddd"}`,background:done?"#EC4899":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {done&&<div style={{color:"white",fontSize:11}}>✓</div>}
+                </div>
+                <span style={{fontSize:16}}>{act.emoji}</span>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:done?"#EC4899":"#444",fontWeight:done?600:400,textDecoration:done?"line-through":"none"}}>{act.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Relationships */}
+      {relationships.length>0&&(
+        <div style={{...S.card,border:"1.5px solid #FBCFE8"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>💝 Relationships to nurture</div>
+            <button onClick={()=>setView("relationships")} style={{background:"#FDF2F8",border:"1.5px solid #FBCFE8",borderRadius:8,padding:"4px 10px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#EC4899",cursor:"pointer"}}>Manage</button>
+          </div>
+          {relationships.slice(0,3).map((rel,i)=>{
+            const daysSince = rel.lastContact ? Math.floor((Date.now()-new Date(rel.lastContact))/(1000*60*60*24)) : null;
+            const overdue = daysSince===null||daysSince>14;
+            return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"linear-gradient(135deg,#EC4899,#F472B6)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontFamily:"Fraunces,serif",fontWeight:800,fontSize:14,flexShrink:0}}>
+                  {rel.name.charAt(0).toUpperCase()}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{rel.name}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:overdue?"#EF4444":"#10B981"}}>
+                    {daysSince===null?"Reach out soon":daysSince===0?"✓ Connected today":`${daysSince}d ago${overdue?" — reach out!":""}`}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {relationships.length===0&&(
+        <button onClick={()=>setView("relationships")} style={{...S.btnGhost,border:"1.5px dashed #FBCFE8",color:"#EC4899",fontSize:13}}>
+          💝 Track your key relationships →
+        </button>
+      )}
+
+      {/* AI Connect Coach */}
+      <div style={{...S.card,border:"1.5px solid #FBCFE8",background:"linear-gradient(135deg,#FDF2F8,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#BE185D",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Connect Coach</div>
+        {connectInsight?(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{connectInsight}"</p>
+        ):(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Log a connection or rate your social battery to unlock a personalised insight.
+          </p>
+        )}
+        <button onClick={getConnectInsight} disabled={insightLoading||(todayConns.length===0&&socialBattery===0)}
+          style={{...S.btn("linear-gradient(135deg,#EC4899,#F472B6)","0 4px 12px #EC489944"),padding:"11px",fontSize:13,opacity:(insightLoading||(todayConns.length===0&&socialBattery===0))?0.5:1}}>
+          {insightLoading?"Thinking...":todayConns.length===0&&socialBattery===0?"Log a connection first":connectInsight?"Get New Insight →":"Analyse My Connect Day →"}
+        </button>
+      </div>
+
+      {goToHabits&&(
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>← Back to Habits</button>
+      )}
+    </div>
+  );
+}
+
+
+
+// ── FOCUS LAYER COMPONENT ─────────────────────────────────
+const DISTRACTION_TYPES = [
+  "Phone notification","Social media","Email","Colleague interruption",
+  "Noise","Unrelated thought","Website","Food craving","Meeting",
+];
+
+const FOCUS_RITUALS = [
+  { id:"phone_away",   emoji:"📵", label:"Phone in another room" },
+  { id:"tabs_closed",  emoji:"💻", label:"Closed all unneeded tabs" },
+  { id:"water_ready",  emoji:"💧", label:"Water bottle on desk" },
+  { id:"mit_written",  emoji:"📝", label:"Wrote my Most Important Task" },
+  { id:"notifications",emoji:"🔕", label:"Notifications turned off" },
+  { id:"time_blocked", emoji:"📅", label:"Time blocked in calendar" },
+  { id:"workspace",    emoji:"🪴", label:"Clean and ready workspace" },
+  { id:"intention",    emoji:"🎯", label:"Set clear intention for session" },
+];
+
+function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
+  const [view, setView] = useState("dashboard");
+  const [focusInsight, setFocusInsight] = useState("");
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [taskInput, setTaskInput] = useState("");
+  const [goalInput, setGoalInput] = useState("");
+  const [distractionInput, setDistractionInput] = useState("");
+  const [pomTimer, setPomTimer] = useState(0);
+  const [pomRunning, setPomRunning] = useState(false);
+  const [pomInterval, setPomIntervalState] = useState(null);
+  const [pomPhase, setPomPhase] = useState("work"); // work | break
+  const [rituals, setRituals] = useState([]);
+
+  const focus = st.focus || {};
+  const today = new Date().toISOString().slice(0,10);
+  const tasks = focus.tasks || [];
+  const weeklyGoals = focus.weeklyGoals || [];
+  const distractions = focus.distractions || [];
+  const pomodoros = focus.pomodoros || 0;
+  const deepWorkMins = focus.deepWorkMins || 0;
+  const energyLevel = focus.energyLevel || 0;
+  const doneTasks = tasks.filter(t=>t.done).length;
+  const productivityScore = () => {
+    let score = 0;
+    score += Math.min(40, pomodoros * 10);
+    score += Math.min(20, Math.round((doneTasks/Math.max(tasks.length,1))*20));
+    score += Math.min(20, energyLevel * 2);
+    score += Math.min(10, rituals.length * 1.5);
+    score -= Math.min(10, distractions.length * 2);
+    return Math.max(0, Math.min(100, Math.round(score)));
+  };
+  const score = productivityScore();
+  const scoreColor = score>=70?"#10B981":score>=50?"#F59E0B":"#EF4444";
+
+  const analyzeForHabit = () => {
+    if (!focusHabit) return null;
+    const habit = focusHabit.toLowerCase();
+    if (habit.includes("pomodoro") || habit.includes("25")) {
+      return { goal:"Complete Pomodoro sessions", actual:`${pomodoros} done`, met: pomodoros>=1 };
+    } else if (habit.includes("task") || habit.includes("mit") || habit.includes("important")) {
+      return { goal:"Write & complete MIT", actual: focus.mit?`MIT: "${focus.mit.slice(0,30)}..."`:"MIT not set", met: !!focus.mit && tasks.some(t=>t.text===focus.mit&&t.done) };
+    } else if (habit.includes("notif") || habit.includes("phone")) {
+      const done = rituals.includes("phone_away")||rituals.includes("notifications");
+      return { goal:"Remove distractions", actual: done?"Done ✓":"Not done yet", met: done };
+    } else if (habit.includes("deep work") || habit.includes("minute") || habit.includes("hour")) {
+      const match = focusHabit.match(/(\d+)/);
+      const target = match ? parseInt(match[1]) : 25;
+      return { goal:`${target} min deep work`, actual:`${deepWorkMins} min done`, met: deepWorkMins>=target };
+    }
+    return { goal: focusHabit, actual: pomodoros>0?`${pomodoros} pomodoros done`:doneTasks>0?`${doneTasks} tasks done`:"Nothing logged yet", met: pomodoros>0||doneTasks>0 };
+  };
+
+  const startPomodoro = () => {
+    const mins = pomPhase==="work" ? (focus.pomodoroMins||25) : 5;
+    setPomTimer(mins*60);
+    setPomRunning(true);
+    const iv = setInterval(()=>{
+      setPomTimer(prev=>{
+        if(prev<=1){
+          clearInterval(iv);
+          setPomRunning(false);
+          if(pomPhase==="work"){
+            update({focus:{...focus,pomodoros:(focus.pomodoros||0)+1,deepWorkMins:(focus.deepWorkMins||0)+(focus.pomodoroMins||25)}});
+            setPomPhase("break");
+            setPomTimer(5*60);
+          } else {
+            setPomPhase("work");
+            setPomTimer((focus.pomodoroMins||25)*60);
+          }
+          return 0;
+        }
+        return prev-1;
+      });
+    },1000);
+    setPomIntervalState(iv);
+  };
+
+  const stopPomodoro = () => {
+    clearInterval(pomInterval);
+    setPomRunning(false);
+    setPomTimer(0);
+    setPomPhase("work");
+  };
+
+  const formatTime = s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+  const getFocusInsight = async () => {
+    if (!fetchAIInsight) return;
+    setInsightLoading(true);
+    const ha = analyzeForHabit();
+    const ctx = JSON.stringify({
+      habit: focusHabit,
+      mit: focus.mit,
+      pomodoros_done: pomodoros,
+      deep_work_mins: deepWorkMins,
+      tasks_total: tasks.length,
+      tasks_done: doneTasks,
+      distractions: distractions.length,
+      energy_level: energyLevel,
+      productivity_score: score,
+      habit_met: ha?.met,
+    });
+    const insight = await fetchAIInsight("focus_insight", ctx);
+    setFocusInsight(insight||"Deep work is rare and valuable. Every protected minute compounds into something extraordinary.");
+    setInsightLoading(false);
+  };
+
+  const ha = analyzeForHabit();
+
+  // ── WEEKLY PLANNING SCREEN ──
+  if (view==="planning") return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <button onClick={()=>setView("dashboard")} style={{background:"none",border:"none",fontSize:20,cursor:"pointer"}}>←</button>
+        <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Weekly Goals</h3>
+      </div>
+      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Research shows that writing weekly goals increases follow-through by 42%. What are your top goals this week?</p>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {weeklyGoals.map((g,i)=>(
+          <div key={i} style={{...S.card,display:"flex",alignItems:"center",gap:10,padding:"12px 14px",border:`1.5px solid ${g.done?"#A7F3D0":"#f0f0f0"}`}}>
+            <button onClick={()=>{
+              const updated=[...weeklyGoals];
+              updated[i]={...updated[i],done:!updated[i].done};
+              update({focus:{...focus,weeklyGoals:updated}});
+            }} style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${g.done?"#10B981":"#ddd"}`,background:g.done?"#10B981":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",color:"white",fontSize:11}}>
+              {g.done&&"✓"}
+            </button>
+            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:g.done?"#10B981":"#333",textDecoration:g.done?"line-through":"none",flex:1}}>{g.text}</span>
+            <button onClick={()=>update({focus:{...focus,weeklyGoals:weeklyGoals.filter((_,idx)=>idx!==i)}})}
+              style={{background:"none",border:"none",color:"#ddd",cursor:"pointer",fontSize:16}}>✕</button>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <input value={goalInput} onChange={e=>setGoalInput(e.target.value)}
+          onKeyDown={e=>{if(e.key==="Enter"&&goalInput.trim()){update({focus:{...focus,weeklyGoals:[...weeklyGoals,{text:goalInput.trim(),done:false}]}});setGoalInput("");}}}
+          placeholder="Add a weekly goal..." style={{...S.input,padding:"12px 16px",flex:1}}/>
+        <button onClick={()=>{if(goalInput.trim()){update({focus:{...focus,weeklyGoals:[...weeklyGoals,{text:goalInput.trim(),done:false}]}});setGoalInput("");}}}
+          style={{padding:"12px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#F97316,#FB923C)",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+          Add
+        </button>
+      </div>
+      <div style={{background:"linear-gradient(135deg,#FFF7ED,white)",borderRadius:16,padding:"14px",border:"1px solid #FED7AA"}}>
+        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#92400E",lineHeight:1.7}}>
+          💡 <strong>Weekly review:</strong> Every Sunday, review what worked, what didn't, and set next week's top 3 goals. This single habit is used by most high performers worldwide.
+        </p>
+      </div>
+    </div>
+  );
+
+  // ── DASHBOARD ──
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:24,color:"#0f0f0f"}}>🎯 Focus</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Deep work · Tasks · Productivity</div>
+        </div>
+        {score>0&&(
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:scoreColor,lineHeight:1}}>{score}</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>focus score</div>
+          </div>
+        )}
+      </div>
+
+      {/* Focus habit */}
+      {focusHabit&&(
+        <div style={{background:"linear-gradient(135deg,#FFF7ED,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${ha?.met?"#FED7AA":"#FED7AA"}`}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Today's Focus Habit</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0f0f0f",lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>"{focusHabit}"</div>
+          {ha&&(
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:16}}>{ha.met?"✅":"🎯"}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:ha.met?"#F97316":"#F59E0B",fontWeight:600}}>
+                {ha.actual} — {ha.met?"Habit goal met!":ha.goal}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Energy level */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:10}}>⚡ Peak energy level right now</div>
+        <div style={{display:"flex",gap:4,marginBottom:6}}>
+          {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+            <button key={n} onClick={()=>update({focus:{...focus,energyLevel:n}})}
+              style={{flex:1,padding:"8px 0",borderRadius:8,border:`1.5px solid ${energyLevel===n?"#F97316":"#e8e8e8"}`,background:energyLevel===n?"#FFF7ED":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:energyLevel===n?"#F97316":"#aaa",cursor:"pointer",transition:"all 0.2s"}}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>
+          <span>Drained</span><span>Peak energy</span>
+        </div>
+      </div>
+
+      {/* MIT — Most Important Task */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:6}}>📝 Most Important Task</div>
+        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginBottom:10,lineHeight:1.5}}>The one task that if done today, makes everything else easier.</p>
+        <input value={focus.mit||""} onChange={e=>update({focus:{...focus,mit:e.target.value}})}
+          placeholder="What is your MIT today?"
+          style={{...S.input,padding:"12px 16px",marginBottom:8}}/>
+        {focus.mit&&(
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"#FFF7ED",borderRadius:12}}>
+            <span style={{fontSize:16}}>🎯</span>
+            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#F97316",fontWeight:600,flex:1}}>{focus.mit}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Pomodoro timer */}
+      <div style={{...S.card,border:"1.5px solid #FED7AA"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>🍅 Pomodoro Timer</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#F97316",fontWeight:600}}>{pomodoros} done · {deepWorkMins} min</div>
+        </div>
+        {pomTimer>0?(
+          <div style={{textAlign:"center",marginBottom:12}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:56,color:pomPhase==="work"?"#F97316":"#10B981",lineHeight:1}}>{formatTime(pomTimer)}</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginTop:4}}>{pomPhase==="work"?"Deep work — stay focused":"Break time — rest your mind"}</div>
+          </div>
+        ):(
+          <div style={{textAlign:"center",marginBottom:12}}>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:48,color:"#ddd",lineHeight:1}}>{formatTime((focus.pomodoroMins||25)*60)}</div>
+          </div>
+        )}
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          {!pomRunning?(
+            <button onClick={startPomodoro} style={{...S.btn("linear-gradient(135deg,#F97316,#FB923C)","0 4px 12px #F9731644"),flex:1,padding:"12px",fontSize:13}}>
+              ▶ Start {pomPhase==="work"?"Focus":"Break"} Session
+            </button>
+          ):(
+            <button onClick={stopPomodoro} style={{...S.btnGhost,flex:1,padding:"12px",fontSize:13}}>⏹ Stop</button>
+          )}
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {[15,25,45,60].map(m=>(
+            <button key={m} onClick={()=>update({focus:{...focus,pomodoroMins:m}})}
+              style={{flex:1,padding:"7px",borderRadius:10,border:`1.5px solid ${(focus.pomodoroMins||25)===m?"#F97316":"#e8e8e8"}`,background:(focus.pomodoroMins||25)===m?"#FFF7ED":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:(focus.pomodoroMins||25)===m?"#F97316":"#aaa",cursor:"pointer"}}>
+              {m}m
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Focus rituals */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>🛡️ Focus Rituals</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#F97316",fontWeight:600}}>{rituals.length}/{FOCUS_RITUALS.length}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {FOCUS_RITUALS.map(r=>{
+            const done=rituals.includes(r.id);
+            return (
+              <button key={r.id} onClick={()=>setRituals(prev=>done?prev.filter(x=>x!==r.id):[...prev,r.id])}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",borderRadius:12,border:`1.5px solid ${done?"#FED7AA":"#f0f0f0"}`,background:done?"#FFF7ED":"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                <div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${done?"#F97316":"#ddd"}`,background:done?"#F97316":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,color:"white",fontSize:11}}>
+                  {done&&"✓"}
+                </div>
+                <span style={{fontSize:16}}>{r.emoji}</span>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:done?"#F97316":"#444",fontWeight:done?600:400,textDecoration:done?"line-through":"none"}}>{r.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Task list */}
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>✅ Today's Tasks</div>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#F97316",fontWeight:600}}>{doneTasks}/{tasks.length}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+          {tasks.map((t,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+              <button onClick={()=>{const u=[...tasks];u[i]={...u[i],done:!u[i].done};update({focus:{...focus,tasks:u}});}}
+                style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${t.done?"#F97316":"#ddd"}`,background:t.done?"#F97316":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer",color:"white",fontSize:11}}>
+                {t.done&&"✓"}
+              </button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:t.done?"#aaa":"#333",textDecoration:t.done?"line-through":"none",flex:1}}>{t.text}</span>
+              <button onClick={()=>update({focus:{...focus,tasks:tasks.filter((_,idx)=>idx!==i)}})}
+                style={{background:"none",border:"none",color:"#ddd",cursor:"pointer",fontSize:14}}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={taskInput} onChange={e=>setTaskInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&taskInput.trim()){update({focus:{...focus,tasks:[...tasks,{text:taskInput.trim(),done:false}]}});setTaskInput("");}}}
+            placeholder="Add a task..." style={{...S.input,padding:"10px 14px",fontSize:13,flex:1}}/>
+          <button onClick={()=>{if(taskInput.trim()){update({focus:{...focus,tasks:[...tasks,{text:taskInput.trim(),done:false}]}});setTaskInput("");}}}
+            style={{padding:"10px 16px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#F97316,#FB923C)",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+            +
+          </button>
+        </div>
+      </div>
+
+      {/* Distraction log */}
+      <div style={S.card}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f",marginBottom:8}}>🎣 Distraction Log</div>
+        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",lineHeight:1.5,marginBottom:10}}>Awareness is the first step. Log distractions to spot patterns.</p>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          {DISTRACTION_TYPES.map(d=>(
+            <button key={d} onClick={()=>update({focus:{...focus,distractions:[...distractions,{type:d,time:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}]}})}
+              style={{padding:"6px 12px",borderRadius:20,border:"1.5px solid #FED7AA",background:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#F97316",cursor:"pointer"}}>
+              {d}
+            </button>
+          ))}
+        </div>
+        {distractions.length>0&&(
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>{distractions.length} distraction(s) logged today</div>
+        )}
+      </div>
+
+      {/* Weekly planning button */}
+      <button onClick={()=>setView("planning")} style={{...S.btnGhost,border:"1.5px solid #FED7AA",color:"#F97316",fontSize:13}}>
+        📅 Weekly Goals & Planning →
+      </button>
+
+      {/* AI Focus Coach */}
+      <div style={{...S.card,border:"1.5px solid #FED7AA",background:"linear-gradient(135deg,#FFF7ED,white)"}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:"#C2410C",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>🤖 AI Focus Coach</div>
+        {focusInsight?(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.75,fontStyle:"italic",marginBottom:12}}>"{focusInsight}"</p>
+        ):(
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",lineHeight:1.6,marginBottom:10}}>
+            Start a pomodoro or add tasks to unlock your personalised focus insight.
+          </p>
+        )}
+        <button onClick={getFocusInsight} disabled={insightLoading||(pomodoros===0&&tasks.length===0&&energyLevel===0)}
+          style={{...S.btn("linear-gradient(135deg,#F97316,#FB923C)","0 4px 12px #F9731644"),padding:"11px",fontSize:13,opacity:(insightLoading||(pomodoros===0&&tasks.length===0&&energyLevel===0))?0.5:1}}>
+          {insightLoading?"Thinking...":pomodoros===0&&tasks.length===0&&energyLevel===0?"Add tasks first to unlock":focusInsight?"Get New Insight →":"Analyse My Focus Day →"}
+        </button>
+      </div>
+
+      {goToHabits&&(
+        <button onClick={goToHabits} style={{...S.btn(),marginTop:4}}>← Back to Habits</button>
+      )}
+    </div>
+  );
+}
+
+
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
 function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
   const [analytics, setAnalytics] = useState(null);
@@ -1515,6 +2742,38 @@ export default function App() {
           stepsToday: 0,
           stepsDate: "",
           workouts: (st.move?.workouts||[]).filter(w=>w.date===new Date().toISOString().slice(0,10)),
+        },
+        rest: {
+          ...(st.rest||{}),
+          windDown: [],
+          quality: 0,
+        },
+        calm: {
+          ...(st.calm||{}),
+          stressLevel: 0,
+          mood: "",
+          gratitude: [],
+          breathingDone: false,
+          meditationMins: 0,
+          calmActivities: [],
+          calmDate: "",
+        },
+        connect: {
+          ...(st.connect||{}),
+          connections: [],
+          socialBattery: 0,
+          kindness: [],
+          connectDate: "",
+        },
+        focus: {
+          ...(st.focus||{}),
+          mit: "",
+          pomodoros: 0,
+          distractions: [],
+          deepWorkMins: 0,
+          energyLevel: 0,
+          tasks: (st.focus?.tasks||[]).map(t=>({...t,done:false})),
+          focusDate: "",
         }
       });
     }
@@ -2180,6 +3439,10 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                       </div>
                       {pid==="fuel"&&<button onClick={(e)=>{e.stopPropagation();goTo("fuel_layer");}} style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#F59E0B",cursor:"pointer"}}>⚡ Track</button>}
                       {pid==="move"&&<button onClick={(e)=>{e.stopPropagation();goTo("move_layer");}} style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",cursor:"pointer"}}>💪 Track</button>}
+                      {pid==="rest"&&<button onClick={(e)=>{e.stopPropagation();goTo("rest_layer");}} style={{background:"#F5F3FF",border:"1.5px solid #DDD6FE",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#8B5CF6",cursor:"pointer"}}>😴 Track</button>}
+                      {pid==="calm"&&<button onClick={(e)=>{e.stopPropagation();goTo("calm_layer");}} style={{background:"#F0F9FF",border:"1.5px solid #BAE6FD",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#0EA5E9",cursor:"pointer"}}>🧘 Track</button>}
+                      {pid==="connect"&&<button onClick={(e)=>{e.stopPropagation();goTo("connect_layer");}} style={{background:"#FDF2F8",border:"1.5px solid #FBCFE8",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#EC4899",cursor:"pointer"}}>🤝 Track</button>}
+                      {pid==="focus"&&<button onClick={(e)=>{e.stopPropagation();goTo("focus_layer");}} style={{background:"#FFF7ED",border:"1.5px solid #FED7AA",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#F97316",cursor:"pointer"}}>🎯 Track</button>}
                     </div>
                     <div style={{background:isDone?p.light:"white",padding:"14px 18px",transition:"all 0.4s"}}>
                       {!selected ? (
@@ -2209,6 +3472,30 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                             <button className="tap" onClick={()=>goTo("move_layer")}
                               style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #A7F3D0",background:"#ECFDF5",color:"#10B981",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                               💪 Track Movement →
+                            </button>
+                          )}
+                          {pid==="rest"&&(
+                            <button className="tap" onClick={()=>goTo("rest_layer")}
+                              style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #DDD6FE",background:"#F5F3FF",color:"#8B5CF6",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                              😴 Track Sleep →
+                            </button>
+                          )}
+                          {pid==="calm"&&(
+                            <button className="tap" onClick={()=>goTo("calm_layer")}
+                              style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #BAE6FD",background:"#F0F9FF",color:"#0EA5E9",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                              🧘 Track Calm →
+                            </button>
+                          )}
+                          {pid==="connect"&&(
+                            <button className="tap" onClick={()=>goTo("connect_layer")}
+                              style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #FBCFE8",background:"#FDF2F8",color:"#EC4899",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                              🤝 Track Connection →
+                            </button>
+                          )}
+                          {pid==="focus"&&(
+                            <button className="tap" onClick={()=>goTo("focus_layer")}
+                              style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #FED7AA",background:"#FFF7ED",color:"#F97316",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                              🎯 Track Focus →
                             </button>
                           )}
                         </div>
@@ -2265,6 +3552,50 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             </div>
           );
         })}
+
+        {/* ── FOCUS LAYER ── */}
+        {st.screen==="focus_layer"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+            </div>
+            <FocusLayer st={st} update={update} S={S} focusHabit={st.ladder?.focus?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+          </div>
+        )}
+
+        {/* ── CONNECT LAYER ── */}
+        {st.screen==="connect_layer"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+            </div>
+            <ConnectLayer st={st} update={update} S={S} connectHabit={st.ladder?.connect?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+          </div>
+        )}
+
+        {/* ── CALM LAYER ── */}
+        {st.screen==="calm_layer"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+            </div>
+            <CalmLayer st={st} update={update} S={S} calmHabit={st.ladder?.calm?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+          </div>
+        )}
+
+        {/* ── REST LAYER ── */}
+        {st.screen==="rest_layer"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
+              <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
+            </div>
+            <RestLayer st={st} update={update} S={S} restHabit={st.ladder?.rest?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+          </div>
+        )}
 
         {/* ── MOVE LAYER ── */}
         {st.screen==="move_layer"&&(
