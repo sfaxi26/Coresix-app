@@ -2551,23 +2551,216 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
 }
 
 
+
+// ── WEEKLY REPORT COMPONENT ───────────────────────────────
+function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
+  const [loading, setLoading] = useState(false);
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState(null);
+
+  const PILLAR_CONFIG = {
+    fuel:    { emoji:"⚡", name:"Fuel",    color:"#F59E0B", bg:"#FFFBEB" },
+    move:    { emoji:"💪", name:"Move",    color:"#10B981", bg:"#ECFDF5" },
+    rest:    { emoji:"😴", name:"Rest",    color:"#8B5CF6", bg:"#F5F3FF" },
+    calm:    { emoji:"🧘", name:"Calm",    color:"#0EA5E9", bg:"#F0F9FF" },
+    connect: { emoji:"🤝", name:"Connect", color:"#EC4899", bg:"#FDF2F8" },
+    focus:   { emoji:"🎯", name:"Focus",   color:"#F97316", bg:"#FFF7ED" },
+  };
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchWeeklyReport();
+      if (result?.report) {
+        setReport(result);
+      } else {
+        setError("Could not generate report. Try again.");
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  useEffect(()=>{ generate(); },[]);
+
+  const scoreColor = (s) => s>=70?"#10B981":s>=50?"#F59E0B":"#EF4444";
+  const scoreLabel = (s) => s>=80?"Excellent":s>=65?"Good":s>=50?"Fair":"Needs work";
+
+  // Parse report sections
+  const parseSections = (text) => {
+    if (!text) return [];
+    const sections = [];
+    const lines = text.split('
+');
+    let current = null;
+    lines.forEach(line => {
+      const header = line.match(/^\*\*(.+)\*\*/);
+      if (header) {
+        if (current) sections.push(current);
+        current = { title: header[1], content: [] };
+      } else if (current && line.trim()) {
+        current.content.push(line.trim());
+      }
+    });
+    if (current) sections.push(current);
+    return sections;
+  };
+
+  return (
+    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
+      <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+          <button onClick={goBack} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666"}}>←</button>
+          <div>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0f0f0f",letterSpacing:-0.5}}>Weekly Report</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>
+              {new Date().toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric"})}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading&&(
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
+            <div style={{fontSize:48,marginBottom:16,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:8}}>Analysing your week...</div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.7}}>
+              Reading all 6 pillars · Detecting cross-pillar patterns · Generating your personalised report
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error&&!loading&&(
+          <div style={{...S.card,border:"1.5px solid #fee2e2",textAlign:"center",padding:"28px"}}>
+            <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#ef4444",marginBottom:16}}>{error}</p>
+            <button onClick={generate} style={S.btn()}>Try Again</button>
+          </div>
+        )}
+
+        {/* Report */}
+        {report&&!loading&&(
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Overall score */}
+            <div style={{background:"linear-gradient(135deg,#0f0f0f,#2d2d2d)",borderRadius:20,padding:"24px",textAlign:"center"}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"rgba(255,255,255,0.5)",letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Overall Score</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:72,color:"white",lineHeight:1,marginBottom:4}}>{report.overall}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"rgba(255,255,255,0.6)"}}>out of 100 · {scoreLabel(report.overall)}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:8}}>🔥 {st.streak} day streak</div>
+            </div>
+
+            {/* Pillar scores */}
+            <div style={S.card}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:14}}>This Week's Pillars</div>
+              {Object.entries(report.scores||{}).map(([pillar,score])=>{
+                const p = PILLAR_CONFIG[pillar];
+                if (!p) return null;
+                return (
+                  <div key={pillar} style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:p.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:"#333"}}>{p.name}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:scoreColor(score),fontWeight:700}}>{score}</span>
+                      </div>
+                      <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden"}}>
+                        <div style={{height:"100%",borderRadius:4,background:p.color,width:`${score}%`,transition:"width 0.8s ease"}}/>
+                      </div>
+                    </div>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb",width:50,textAlign:"right"}}>{scoreLabel(score)}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Cross-pillar patterns */}
+            {report.analysis?.patterns?.length>0&&(
+              <div style={S.card}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>🔗 Cross-Pillar Patterns</div>
+                {report.analysis.patterns.map((p,i)=>{
+                  const isPositive = p.severity==="positive";
+                  return (
+                    <div key={i} style={{padding:"12px 14px",borderRadius:14,background:isPositive?"#ECFDF5":"#FFF7ED",border:`1px solid ${isPositive?"#A7F3D0":"#FED7AA"}`,marginBottom:8}}>
+                      <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                        <span style={{fontSize:16}}>{isPositive?"✅":"⚠️"}</span>
+                        <div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:isPositive?"#065F46":"#92400E",lineHeight:1.6,marginBottom:6}}>{p.message}</div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:isPositive?"#10B981":"#F97316",fontWeight:600}}>→ {p.suggestion}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* AI Report sections */}
+            {parseSections(report.report).map((section,i)=>(
+              <div key={i} style={{...S.card,border:"1.5px solid #f0f0f0"}}>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f",marginBottom:10,letterSpacing:-0.3}}>{section.title}</div>
+                {section.content.map((line,j)=>(
+                  <p key={j} style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#374151",lineHeight:1.75,marginBottom:6}}>{line}</p>
+                ))}
+              </div>
+            ))}
+
+            {/* Keystone pillar */}
+            {report.analysis&&(
+              <div style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",borderRadius:20,padding:"20px",border:"1px solid #DDD6FE"}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#6D28D9",letterSpacing:2,textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Your Keystone Pillar</div>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:20,color:"#0f0f0f",marginBottom:4}}>
+                  {PILLAR_CONFIG[report.analysis.keystone]?.emoji} {PILLAR_CONFIG[report.analysis.keystone]?.name}
+                </div>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",lineHeight:1.6}}>
+                  This is your strongest pillar this week. Build on it — it supports everything else.
+                </p>
+              </div>
+            )}
+
+            {/* Regenerate button */}
+            <button onClick={generate} style={{...S.btnGhost,fontSize:13}}>
+              🔄 Regenerate Report
+            </button>
+            <button onClick={goBack} style={S.btn()}>← Back to Dashboard</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
-function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
+function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S }) {
   const [analytics, setAnalytics] = useState(null);
+  const [crossPatterns, setCrossPatterns] = useState(null);
+  const [nudge, setNudge] = useState(null);
   const [insight, setInsight] = useState("");
   const [loading, setLoading] = useState(false);
   const [insightLoading, setInsightLoading] = useState(false);
 
   useEffect(() => {
-    loadAnalytics();
+    loadAll();
   }, []);
 
-  const loadAnalytics = async () => {
+  const loadAll = async () => {
     setLoading(true);
-    const data = await fetchAnalytics();
-    setAnalytics(data);
+    const [analyticsData, crossData, nudgeData] = await Promise.all([
+      fetchAnalytics(),
+      fetchCrossPatterns ? fetchCrossPatterns() : null,
+      fetchPredictiveNudge ? fetchPredictiveNudge() : null,
+    ]);
+    setAnalytics(analyticsData);
+    setCrossPatterns(crossData);
+    setNudge(nudgeData?.nudge);
     setLoading(false);
   };
+
+  const loadAnalytics = loadAll;
 
   const getInsight = async () => {
     setInsightLoading(true);
@@ -2675,6 +2868,55 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, S }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Predictive Nudge */}
+      {nudge && (
+        <div style={{background:"linear-gradient(135deg,#FFF7ED,white)",borderRadius:16,padding:"16px",border:"1.5px solid #FED7AA",display:"flex",gap:12,alignItems:"flex-start"}}>
+          <span style={{fontSize:20,flexShrink:0}}>💡</span>
+          <div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:11,color:"#F97316",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Today's Insight</div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>{nudge.text}</p>
+            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+              {nudge.pattern?.pillars?.map(p=>{
+                const em={fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
+                return <span key={p} style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:20,padding:"2px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#F97316",fontWeight:600}}>{em[p]} {p}</span>;
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cross-pillar patterns */}
+      {crossPatterns?.patterns?.length > 0 && (
+        <div style={S.card}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>🔗 Cross-Pillar Patterns</div>
+          {crossPatterns.patterns.map((p,i)=>{
+            const isPositive = p.severity==="positive";
+            return (
+              <div key={i} style={{padding:"12px 14px",borderRadius:14,background:isPositive?"#ECFDF5":"#FFFBEB",border:`1px solid ${isPositive?"#A7F3D0":"#FDE68A"}`,marginBottom:8}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:isPositive?"#065F46":"#92400E",marginBottom:4}}>
+                  {p.icon} {p.title}
+                </div>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6,marginBottom:6}}>{p.message}</div>
+                {p.actionable&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:isPositive?"#10B981":"#F59E0B",fontWeight:600}}>→ {p.suggestion}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pillar ripple effect */}
+      {crossPatterns?.ripple && (
+        <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"16px",border:"1px solid #DDD6FE"}}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:11,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Your Keystone Pillar</div>
+          <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f",marginBottom:4}}>
+            {{"fuel":"⚡ Fuel","move":"💪 Move","rest":"😴 Rest","calm":"🧘 Calm","connect":"🤝 Connect","focus":"🎯 Focus"}[crossPatterns.ripple.keystone]}
+          </div>
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#6D28D9",lineHeight:1.6}}>
+            This pillar is influencing the others most. Strengthen it and watch the ripple effect.
+          </p>
         </div>
       )}
 
@@ -2839,6 +3081,41 @@ export default function App() {
       deviceId: id, purpose, pillar,
     });
     return res?.content || null;
+  };
+
+  const fetchCrossPatterns = async () => {
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return null;
+    return await api("GET", `/api/cross-patterns/${id}`);
+  };
+
+  const fetchPredictiveNudge = async () => {
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return null;
+    return await api("POST", "/api/predictive-nudge", {
+      deviceId: id,
+      currentPillarData: {
+        fuel: st.fuel, move: st.move, rest: st.rest,
+        calm: st.calm, connect: st.connect, focus: st.focus,
+      }
+    });
+  };
+
+  const fetchWeeklyReport = async () => {
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return null;
+    const weekData = {
+      fuel: st.fuel || {},
+      move: st.move || {},
+      rest: st.rest || {},
+      calm: st.calm || {},
+      connect: st.connect || {},
+      focus: st.focus || {},
+      streak: st.streak,
+      activePillars: activePids,
+      weeklyImpact: st.weeklyImpact || {},
+    };
+    return await api("POST", "/api/weekly-report", { deviceId: id, weekData });
   };
 
   const fetchAnalytics = async () => {
@@ -3553,6 +3830,11 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
           );
         })}
 
+        {/* ── WEEKLY REPORT ── */}
+        {st.screen==="weekly_report_full"&&(
+          <WeeklyReport st={st} goBack={()=>goTo("dashboard")} fetchWeeklyReport={fetchWeeklyReport} S={S}/>
+        )}
+
         {/* ── FOCUS LAYER ── */}
         {st.screen==="focus_layer"&&(
           <div className="fu" style={{...S.page,paddingBottom:90}}>
@@ -3895,7 +4177,13 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             )}
 
             {st.tab==="brain"&&(
-              <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} S={S} />
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <button onClick={()=>goTo("weekly_report_full")}
+                  style={{...S.btn("linear-gradient(135deg,#6D28D9,#8B5CF6)","0 8px 24px #6D28D944"),padding:"16px",fontSize:14}}>
+                  📊 Generate Weekly Intelligence Report →
+                </button>
+                <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} />
+              </div>
             )}
 
             {st.tab==="impact"&&(
