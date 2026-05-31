@@ -2592,8 +2592,7 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
   const parseSections = (text) => {
     if (!text) return [];
     const sections = [];
-    const lines = text.split('
-');
+    const lines = text.split('\n');
     let current = null;
     lines.forEach(line => {
       const header = line.match(/^\*\*(.+)\*\*/);
