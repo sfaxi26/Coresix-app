@@ -2845,6 +2845,153 @@ function PillarRipple({ ripple, S }) {
   );
 }
 
+
+// ── MONTHLY PROGRESS LETTER ───────────────────────────────
+function MonthlyLetter({ st, goBack, S }) {
+  const [loading, setLoading] = useState(false);
+  const [letter, setLetter] = useState(null);
+  const [error, setError] = useState(null);
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const id = localStorage.getItem("coresix_device_id");
+      if (!id) throw new Error("No device ID");
+
+      const monthData = {
+        fuel: st.fuel,
+        move: st.move,
+        rest: st.rest,
+        calm: st.calm,
+        connect: st.connect,
+        focus: st.focus,
+        streak: st.streak,
+      };
+
+      const res = await fetch("https://coresix-backend-production.up.railway.app/api/monthly-letter", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ deviceId: id, monthData }),
+      });
+      const data = await res.json();
+      if (data.letter) setLetter(data);
+      else throw new Error("No letter generated");
+    } catch (err) {
+      setError("Could not generate your letter. Try again.");
+    }
+    setLoading(false);
+  };
+
+  useEffect(()=>{ generate(); },[]);
+
+  const PILLAR_EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
+
+  return (
+    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
+      <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:24}}>
+          <button onClick={goBack} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666"}}>←</button>
+          <div>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0f0f0f",letterSpacing:-0.5}}>Monthly Letter</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>
+              {new Date().toLocaleDateString("en",{month:"long",year:"numeric"})}
+            </div>
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading&&(
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
+            <div style={{fontSize:48,marginBottom:16,animation:"float 1.5s ease-in-out infinite"}}>✉️</div>
+            <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:8}}>Writing your letter...</div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.7}}>
+              Reading 30 days of data · Finding your patterns · Writing something honest
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error&&!loading&&(
+          <div style={{...S.card,border:"1.5px solid #fee2e2",textAlign:"center",padding:"28px"}}>
+            <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#ef4444",marginBottom:16}}>{error}</p>
+            <button onClick={generate} style={S.btn()}>Try Again</button>
+          </div>
+        )}
+
+        {/* Letter */}
+        {letter&&!loading&&(
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Month stats */}
+            <div style={{background:"linear-gradient(135deg,#0f0f0f,#2d2d2d)",borderRadius:20,padding:"22px"}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>Your Month in Numbers</div>
+              <div style={{display:"flex",gap:12}}>
+                {[
+                  {label:"Days active",value:letter.stats?.totalDays||0,unit:"/30"},
+                  {label:"Current streak",value:letter.stats?.streak||0,unit:"days"},
+                ].map(s=>(
+                  <div key={s.label} style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.07)",borderRadius:14,padding:"14px 8px"}}>
+                    <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:32,color:"white",lineHeight:1}}>{s.value}</div>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:4,textTransform:"uppercase",letterSpacing:1}}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pillar breakdown */}
+              {letter.stats?.pillarStats&&Object.keys(letter.stats.pillarStats).length>0&&(
+                <div style={{marginTop:14}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"rgba(255,255,255,0.3)",letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Pillar Activity</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {Object.entries(letter.stats.pillarStats).map(([pillar,data])=>(
+                      <div key={pillar} style={{background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{fontSize:12}}>{PILLAR_EMOJIS[pillar]}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"rgba(255,255,255,0.6)"}}>{data.days}d</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* The letter */}
+            <div style={{background:"white",borderRadius:20,padding:"28px 24px",border:"1.5px solid #f0f0f0",boxShadow:"0 8px 40px #0006"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20,paddingBottom:16,borderBottom:"1px solid #f5f5f5"}}>
+                <div style={{width:40,height:40,borderRadius:10,background:"linear-gradient(135deg,#10B981,#0EA5E9)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>✦</div>
+                <div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:16,color:"#0f0f0f"}}>From CoreSix</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{letter.month}</div>
+                </div>
+              </div>
+
+              {letter.letter.split("
+").filter(l=>l.trim()).map((line,i)=>(
+                <p key={i} style={{
+                  fontFamily: line.startsWith("Dear")||line.startsWith("With") ? "Fraunces,serif" : "Plus Jakarta Sans,sans-serif",
+                  fontSize: line.startsWith("Dear")||line.startsWith("With") ? 16 : 14,
+                  fontWeight: line.startsWith("Dear")||line.startsWith("With") ? 700 : 400,
+                  color: "#374151",
+                  lineHeight: 1.85,
+                  marginBottom: 12,
+                }}>{line}</p>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <button onClick={generate} style={{...S.btnGhost,fontSize:13}}>
+              🔄 Regenerate Letter
+            </button>
+            <button onClick={goBack} style={S.btn()}>← Back to Dashboard</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
 function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S }) {
   const [analytics, setAnalytics] = useState(null);
@@ -3971,6 +4118,11 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
           );
         })}
 
+        {/* ── MONTHLY LETTER ── */}
+        {st.screen==="monthly_letter"&&(
+          <MonthlyLetter st={st} goBack={()=>goTo("dashboard")} S={S}/>
+        )}
+
         {/* ── WEEKLY REPORT ── */}
         {st.screen==="weekly_report_full"&&(
           <WeeklyReport st={st} goBack={()=>goTo("dashboard")} fetchWeeklyReport={fetchWeeklyReport} S={S}/>
@@ -4322,6 +4474,10 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
                 <button onClick={()=>goTo("weekly_report_full")}
                   style={{...S.btn("linear-gradient(135deg,#6D28D9,#8B5CF6)","0 8px 24px #6D28D944"),padding:"16px",fontSize:14}}>
                   📊 Generate Weekly Intelligence Report →
+                </button>
+                <button onClick={()=>goTo("monthly_letter")}
+                  style={{...S.btn("linear-gradient(135deg,#0f0f0f,#2d2d2d)","0 8px 24px #0003"),padding:"14px",fontSize:13}}>
+                  ✉️ Read My Monthly Progress Letter →
                 </button>
                 <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} />
               </div>
