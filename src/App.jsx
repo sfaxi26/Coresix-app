@@ -3158,176 +3158,6 @@ function NextWeekPlan({ st, goBack, S }) {
 }
 
 
-// ── ABOUT CORESIX COMPONENT ───────────────────────────────
-function AboutCoresSix({ goBack, S }) {
-  const [section, setSection] = useState("why"); // why | benefits | who | features
-
-  const TABS = [
-    { id:"why",      label:"Why CoreSix" },
-    { id:"benefits", label:"6 Benefits" },
-    { id:"who",      label:"Who It's For" },
-    { id:"features", label:"Brain Features" },
-  ];
-
-  return (
-    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
-      <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
-
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-          <button onClick={goBack} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666"}}>←</button>
-          <div>
-            <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0f0f0f",letterSpacing:-0.5}}>About CoreSix</div>
-            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Why this app exists</div>
-          </div>
-        </div>
-
-        {/* Tab nav */}
-        <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4,marginBottom:20}}>
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setSection(t.id)}
-              style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${section===t.id?"#10B981":"#e8e8e8"}`,background:section===t.id?"#ECFDF5":"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:section===t.id?"#10B981":"#666",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* WHY CORESIX */}
-        {section==="why"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <div style={{background:"linear-gradient(135deg,#0f0f0f,#2d2d2d)",borderRadius:20,padding:"24px"}}>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"white",lineHeight:1.2,marginBottom:12}}>
-                Most people know what they should do.
-                <br/>They just can't make it stick.
-              </div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"rgba(255,255,255,0.6)",lineHeight:1.7}}>
-                Not because they lack willpower. Because they lack structure, feedback, and understanding of how their habits connect.
-              </p>
-            </div>
-
-            {[
-              { icon:"🎯", title:"One habit per pillar", body:"Not 10 things to change. Not a complete life overhaul. One tiny habit across 6 areas of your life. Small enough to do on your worst day." },
-              { icon:"🔗", title:"Habits that connect", body:"CoreSix shows you that your poor sleep is hurting your focus. That your low movement is raising your stress. No other app connects these dots." },
-              { icon:"🧠", title:"Intelligence, not tracking", body:"Most apps track habits. CoreSix understands your life. Your patterns. Your weak days. Your keystone pillar. The ripple effects you can't see." },
-              { icon:"📈", title:"Gets better over time", body:"The first week it feels like any other app. By week 3 the patterns are real. The AI insights are specific. The monthly letter hits differently. The product gets better the longer you use it." },
-            ].map((item,i)=>(
-              <div key={i} style={{...S.card,display:"flex",gap:14,alignItems:"flex-start"}}>
-                <div style={{fontSize:28,flexShrink:0}}>{item.icon}</div>
-                <div>
-                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f",marginBottom:6}}>{item.title}</div>
-                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",lineHeight:1.7}}>{item.body}</p>
-                </div>
-              </div>
-            ))}
-
-            <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"18px",border:"1px solid #DDD6FE"}}>
-              <p style={{fontFamily:"Fraunces,serif",fontSize:16,color:"#0f0f0f",lineHeight:1.6,fontStyle:"italic"}}>
-                "CoreSix is not a habit tracker. It is a behavioural intelligence platform."
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 6 BENEFITS */}
-        {section==="benefits"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {[
-              { num:"1", color:"#10B981", bg:"#ECFDF5", border:"#A7F3D0", title:"Clarity", subtitle:'"I know what to work on"', body:"The questionnaire identifies your 3 weakest pillars in 5 minutes. No guessing. No overwhelm. Just: here is where to start. Most people spend years not knowing why they feel stuck. CoreSix names it immediately." },
-              { num:"2", color:"#F59E0B", bg:"#FFFBEB", border:"#FDE68A", title:"Momentum", subtitle:'"I can actually do this"', body:"The habit ladder starts so small it's almost embarrassing. 5 push-ups. One glass of water. One message to a friend. That's the point. Small wins build identity. Identity drives behaviour. Behaviour changes everything." },
-              { num:"3", color:"#8B5CF6", bg:"#F5F3FF", border:"#DDD6FE", title:"Understanding", subtitle:'"I see how my life connects"', body:"CoreSix shows you that your poor sleep is hurting your focus. That your low movement is raising your stress. That your isolation is making everything harder. No other app connects these dots." },
-              { num:"4", color:"#0EA5E9", bg:"#F0F9FF", border:"#BAE6FD", title:"Accountability", subtitle:'"Something is watching honestly"', body:'The weekly report says: "You showed up 12 out of 30 days. Your Rest pillar improved but Focus dropped." Honest feedback from something that has no reason to lie to you.' },
-              { num:"5", color:"#EC4899", bg:"#FDF2F8", border:"#FBCFE8", title:"Personalisation", subtitle:'"This feels like it's for me"', body:'The AI reads YOUR data and says: "Your last 3 streak breaks happened on Fridays. Today is Thursday. Plan ahead." That is not something any other app says.' },
-              { num:"6", color:"#F97316", bg:"#FFF7ED", border:"#FED7AA", title:"Identity shift", subtitle:'"I am becoming someone different"', body:"Every check-in sends a signal to your brain: I am someone who shows up. After 30 days of that signal — you are different. Not because of any single habit. Because of who you have been proving yourself to be." },
-            ].map((b,i)=>(
-              <div key={i} style={{borderRadius:20,background:b.bg,border:`1.5px solid ${b.border}`,padding:"18px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:b.color,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Fraunces,serif",fontWeight:900,fontSize:18,color:"white",flexShrink:0}}>{b.num}</div>
-                  <div>
-                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f"}}>{b.title}</div>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:b.color,fontWeight:600}}>{b.subtitle}</div>
-                  </div>
-                </div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.75}}>{b.body}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* WHO IT'S FOR */}
-        {section==="who"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.7}}>CoreSix works best for three types of people:</p>
-
-            {[
-              { emoji:"💼", label:"Person A", title:"The Overwhelmed Professional", body:"Knows they should eat better, sleep more, stress less. Tries everything. Nothing sticks. CoreSix gives them one tiny habit per area and shows them the ripple effect of each one.", color:"#F59E0B", bg:"#FFFBEB", border:"#FDE68A" },
-              { emoji:"🌱", label:"Person B", title:"Coming Back After Burnout", body:"Lost their routines. Doesn't know where to start. CoreSix identifies the weakest pillar and starts so small there is no excuse not to begin.", color:"#10B981", bg:"#ECFDF5", border:"#A7F3D0" },
-              { emoji:"🔬", label:"Person C", title:"Health-Conscious & Wants Depth", body:"Already doing some things right. Wants to understand the connections between sleep, nutrition, stress and focus. CoreSix gives them the data and intelligence layer they didn't have.", color:"#8B5CF6", bg:"#F5F3FF", border:"#DDD6FE" },
-            ].map((p,i)=>(
-              <div key={i} style={{borderRadius:20,background:p.bg,border:`1.5px solid ${p.border}`,padding:"20px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                  <div style={{fontSize:32}}>{p.emoji}</div>
-                  <div>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:p.color,letterSpacing:1,textTransform:"uppercase"}}>{p.label}</div>
-                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f"}}>{p.title}</div>
-                  </div>
-                </div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.75}}>{p.body}</p>
-              </div>
-            ))}
-
-            <div style={{...S.card,border:"1.5px solid #f0f0f0"}}>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f",marginBottom:10}}>The Honest Truth</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.75,marginBottom:10}}>CoreSix is most valuable after 2-3 weeks of real use.</p>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.75,marginBottom:10}}>The first week — it feels like any other app. By week 3 — the patterns are real. The AI insights are specific. The weekly report means something. The monthly letter hits differently.</p>
-              <div style={{background:"#f8f8f8",borderRadius:12,padding:"14px",fontFamily:"Fraunces,serif",fontSize:15,color:"#0f0f0f",lineHeight:1.5,fontStyle:"italic"}}>
-                "The product gets better the longer someone uses it. That is the most important thing about CoreSix."
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* BRAIN FEATURES */}
-        {section==="features"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.7}}>The brain features work together to close the full loop:</p>
-
-            <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"16px",border:"1px solid #DDD6FE",marginBottom:4}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.8}}>
-                📊 <strong>Weekly Report</strong> tells you <em>what happened</em><br/>
-                🔗 <strong>Cross-Pillar Patterns</strong> tell you <em>why it happened</em><br/>
-                ⚠️ <strong>Predictive Warnings</strong> tell you <em>what might happen</em><br/>
-                🎯 <strong>Smart Next Week Plan</strong> tells you <em>what to DO about it</em>
-              </div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:14,color:"#6D28D9",marginTop:10}}>It closes the loop.</div>
-            </div>
-
-            {[
-              { emoji:"📊", color:"#6D28D9", bg:"#F5F3FF", border:"#DDD6FE", title:"Weekly Intelligence Report", subtitle:"Every Sunday", body:"Scores all 6 pillars. Detects cross-pillar patterns. AI writes a personalised report based on YOUR data — not generic advice. Like having a coach who was watching your whole week." },
-              { emoji:"🔗", color:"#10B981", bg:"#ECFDF5", border:"#A7F3D0", title:"Cross-Pillar Pattern Detection", subtitle:"Always running", body:"Detects relationships between pillars from your data. Poor sleep → low focus. Low movement → high stress. Low connection → higher anxiety. Shows you what you can't see yourself." },
-              { emoji:"⚠️", color:"#F97316", bg:"#FFF7ED", border:"#FED7AA", title:"Predictive Warnings", subtitle:"Before problems happen", body:'Fires before your streak breaks. "Your last 3 breaks happened on Fridays — today is Thursday." "It's 8pm and no habits logged — one habit keeps the streak alive." Warns you before, not after.' },
-              { emoji:"🌊", color:"#0EA5E9", bg:"#F0F9FF", border:"#BAE6FD", title:"Pillar Ripple Effect", subtitle:"Visual map", body:"Shows which pillar is influencing the others most. Strengthen your keystone pillar and watch the others improve automatically. Sees what generic advice never could." },
-              { emoji:"✉️", color:"#0f0f0f", bg:"#f8f8f8", border:"#e8e8e8", title:"Monthly Progress Letter", subtitle:"Every month", body:'A personal letter from your 30 days of data. "You showed up 18 out of 30 days. Your Rest pillar improved from 5.5 to 7.2 hours. This directly improved your Focus score by 34%." Honest. Specific. Yours.' },
-              { emoji:"🎯", color:"#10B981", bg:"#ECFDF5", border:"#A7F3D0", title:"Smart Next Week Plan", subtitle:"Every Sunday", body:"Turns everything CoreSix knows about you into 3 specific actions for next week. Not generic. Not motivational. Specific days, specific times, based on your patterns. Closes the loop between insight and action." },
-            ].map((f,i)=>(
-              <div key={i} style={{borderRadius:18,background:f.bg,border:`1.5px solid ${f.border}`,padding:"16px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                  <span style={{fontSize:24}}>{f.emoji}</span>
-                  <div>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:f.color}}>{f.title}</div>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",textTransform:"uppercase",letterSpacing:1}}>{f.subtitle}</div>
-                  </div>
-                </div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.7}}>{f.body}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <button onClick={goBack} style={{...S.btn(),marginTop:8}}>← Back</button>
-      </div>
-    </div>
-  );
-}
 
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
 function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S }) {
@@ -4123,10 +3953,10 @@ export default function App() {
 
             <div style={S.card}>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",marginBottom:4}}>About CoreSix</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.7,marginBottom:12}}>CoreSix is a wellness app, not a medical tool. Always consult your doctor for medical advice. Built on research by BJ Fogg, James Clear, and behavioural science.</div>
-              <button className="tap" onClick={()=>goTo("about")} style={{...S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 6px 18px #10B98133"),fontSize:13,padding:"12px"}}>
-                📖 Why CoreSix — Benefits & Features →
-              </button>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.7}}>CoreSix is a wellness app, not a medical tool. Always consult your doctor for medical advice.
+
+Built on research by BJ Fogg, James Clear, and behavioural science.</div>
+
             </div>
           </div>
 
@@ -4455,11 +4285,6 @@ export default function App() {
             </div>
           );
         })}
-
-        {/* ── ABOUT ── */}
-        {st.screen==="about"&&(
-          <AboutCoresSix goBack={()=>goTo("settings")} S={S}/>
-        )}
 
         {/* ── NEXT WEEK PLAN ── */}
         {st.screen==="next_week_plan"&&(
