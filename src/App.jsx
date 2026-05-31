@@ -3506,6 +3506,10 @@ export default function App() {
     const loadWarnings = async () => {
       const id = localStorage.getItem("coresix_device_id");
       if (!id) return;
+      // Only load warnings after 7+ days of use
+      const saved = JSON.parse(localStorage.getItem(SAVE_KEY)||"{}");
+      const history = saved.history || [];
+      if (history.length < 7) return; // Not enough data yet
       const res = await api("GET", `/api/warnings/${id}`);
       if (res?.warnings?.length) setWarnings(res.warnings);
     };
