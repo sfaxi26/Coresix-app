@@ -3082,6 +3082,19 @@ export default function App() {
     return res?.content || null;
   };
 
+  const [warnings, setWarnings] = useState([]);
+
+  // Load predictive warnings on app start
+  useEffect(()=>{
+    const loadWarnings = async () => {
+      const id = localStorage.getItem("coresix_device_id");
+      if (!id) return;
+      const res = await api("GET", `/api/warnings/${id}`);
+      if (res?.warnings?.length) setWarnings(res.warnings);
+    };
+    setTimeout(loadWarnings, 2000); // Load after app is ready
+  },[]);
+
   const fetchCrossPatterns = async () => {
     const id = localStorage.getItem("coresix_device_id");
     if (!id) return null;
@@ -3697,6 +3710,31 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
               <span style={{fontSize:16,flexShrink:0}}>☀️</span>
               <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#92400E",lineHeight:1.65,fontStyle:"italic"}}>{morningWisdom}</p>
             </div>
+
+            {/* Predictive Warnings */}
+            {warnings.filter(w=>w.severity!=="positive").slice(0,1).map((w,i)=>(
+              <div key={i} style={{background:w.severity==="high"?"linear-gradient(135deg,#FEF2F2,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${w.severity==="high"?"#FECACA":"#FDE68A"}`,display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{w.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:w.severity==="high"?"#EF4444":"#F59E0B",marginBottom:4}}>{w.title}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6,marginBottom:6}}>{w.message}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:w.severity==="high"?"#EF4444":"#F59E0B",fontWeight:600}}>→ {w.suggestion}</div>
+                </div>
+                <button onClick={()=>setWarnings(prev=>prev.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:"#ddd",cursor:"pointer",fontSize:16,flexShrink:0}}>✕</button>
+              </div>
+            ))}
+
+            {/* Positive warnings — personal best etc */}
+            {warnings.filter(w=>w.severity==="positive").slice(0,1).map((w,i)=>(
+              <div key={i} style={{background:"linear-gradient(135deg,#ECFDF5,white)",borderRadius:16,padding:"14px 16px",border:"1.5px solid #A7F3D0",display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{w.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#10B981",marginBottom:4}}>{w.title}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6}}>{w.message}</div>
+                </div>
+                <button onClick={()=>setWarnings(prev=>prev.filter(w=>w.severity!=="positive"))} style={{background:"none",border:"none",color:"#ddd",cursor:"pointer",fontSize:16,flexShrink:0}}>✕</button>
+              </div>
+            ))}
 
             <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14,paddingBottom:16}}>
               {activePids.map((pid,i)=>{
