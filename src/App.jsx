@@ -2967,8 +2967,7 @@ function MonthlyLetter({ st, goBack, S }) {
                 </div>
               </div>
 
-              {letter.letter.split("
-").filter(l=>l.trim()).map((line,i)=>(
+              {letter.letter.split('\n').filter(l=>l.trim()).map((line,i)=>(
                 <p key={i} style={{
                   fontFamily: line.startsWith("Dear")||line.startsWith("With") ? "Fraunces,serif" : "Plus Jakarta Sans,sans-serif",
                   fontSize: line.startsWith("Dear")||line.startsWith("With") ? 16 : 14,
