@@ -3960,6 +3960,49 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             </div>
           </div>
 
+          {/* ── DEV TEST MODE ── */}
+          <div style={{...S.card,border:"1.5px dashed #e8e8e8"}}>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",marginBottom:4}}>🛠 Test Mode</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#bbb",marginBottom:12,lineHeight:1.5}}>Simulate time passing to test the app without waiting for real days.</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <button className="tap" onClick={()=>{
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate()-1);
+                const yStr = yesterday.toISOString().slice(0,10);
+                setSt(prev=>({...prev,lastDate:yStr,checkedToday:Object.fromEntries(PIDS.map(p=>[p,false])),fuel:{...(prev.fuel||{}),meals:[],waterGlasses:0,waterDate:""},move:{...(prev.move||{}),stepsToday:0,stepsDate:"",workouts:[]},rest:{...(prev.rest||{}),windDown:[],quality:0},calm:{...(prev.calm||{}),stressLevel:0,mood:"",gratitude:[],calmActivities:[]},connect:{...(prev.connect||{}),connections:[],socialBattery:0,kindness:[]},focus:{...(prev.focus||{}),mit:"",pomodoros:0,tasks:(prev.focus?.tasks||[]).map(t=>({...t,done:false})),distractions:[]}}));
+                showToast("✅ Next day simulated — open Home to see reset!", "#10B981");
+                goTo("habits");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>📅 Simulate Next Day</button>
+
+              <button className="tap" onClick={()=>{
+                setSt(prev=>({...prev,showWeeklyCheckin:true}));
+                goTo("habits");
+                showToast("📊 Weekly check-in triggered!", "#8B5CF6");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>📊 Trigger Weekly Check-in</button>
+
+              <button className="tap" onClick={()=>{
+                setSt(prev=>({...prev,streak:prev.streak+7}));
+                showToast("🔥 +7 days added to streak!", "#F59E0B");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>🔥 Add 7 Days to Streak</button>
+
+              <button className="tap" onClick={()=>{
+                const today = new Date();
+                const fakeDays = Array.from({length:7},(_,i)=>{
+                  const d = new Date(today);
+                  d.setDate(d.getDate()-6+i);
+                  return {date:d.toISOString().slice(0,10),day:d.toLocaleDateString("en",{weekday:"short",month:"short",day:"numeric"}),pillars:PIDS.slice(0,3),streak:st.streak+i+1};
+                });
+                setSt(prev=>({...prev,streak:prev.streak+7,history:[...(prev.history||[]),...fakeDays].slice(-30),weeklyImpact:{fuel:2,move:3,rest:1,calm:2,connect:1,focus:3},impactHistory:[...(prev.impactHistory||[]),{week:"2026-W22",answers:{fuel:2,move:3,rest:1,calm:2,connect:1,focus:3},date:today.toLocaleDateString("en",{month:"short",day:"numeric"}),streak:prev.streak+7}].slice(-12)}));
+                showToast("🧠 Full week simulated — check Brain tab!", "#6D28D9");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>🧠 Simulate Full Week of Data</button>
+
+              <button className="tap" onClick={()=>{
+                setSt(prev=>({...prev,streak:0,lastDate:null,history:[]}));
+                showToast("Streak reset to 0", "#aaa");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px",color:"#ef4444",border:"1.5px solid #fee2e2"}}>↩ Reset Streak Only</button>
+            </div>
+          </div>
+
           <button className="tap" onClick={()=>goTo("habits")} style={S.btnGhost}>← Back</button>
         </div>
       )}
