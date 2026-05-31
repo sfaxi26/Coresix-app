@@ -3965,13 +3965,41 @@ Built on research by BJ Fogg, James Clear, and behavioural science.</div>
             <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#bbb",marginBottom:12,lineHeight:1.5}}>Simulate time passing to test the app without waiting for real days.</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               <button className="tap" onClick={()=>{
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate()-1);
-                const yStr = yesterday.toISOString().slice(0,10);
-                setSt(prev=>({...prev,lastDate:yStr,checkedToday:Object.fromEntries(PIDS.map(p=>[p,false])),fuel:{...(prev.fuel||{}),meals:[],waterGlasses:0,waterDate:""},move:{...(prev.move||{}),stepsToday:0,stepsDate:"",workouts:[]},rest:{...(prev.rest||{}),windDown:[],quality:0},calm:{...(prev.calm||{}),stressLevel:0,mood:"",gratitude:[],calmActivities:[]},connect:{...(prev.connect||{}),connections:[],socialBattery:0,kindness:[]},focus:{...(prev.focus||{}),mit:"",pomodoros:0,tasks:(prev.focus?.tasks||[]).map(t=>({...t,done:false})),distractions:[]}}));
-                showToast("✅ Next day simulated — open Home to see reset!", "#10B981");
-                goTo("habits");
-              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>📅 Simulate Next Day</button>
+                const saved = JSON.parse(localStorage.getItem(SAVE_KEY)||"{}");
+                const today = new Date().toISOString().slice(0,10);
+
+                // 1. SAVE today's data to history first
+                const activePids = saved.selectedPillars || ["fuel","move","rest"];
+                const checkedToday = saved.checkedToday || {};
+                const donePillars = activePids.filter(p=>checkedToday[p]);
+                if (donePillars.length > 0) {
+                  const newStreak = (saved.streak||0) + 1;
+                  saved.streak = newStreak;
+                  const newHistory = [...(saved.history||[]), {
+                    date: today,
+                    day: new Date().toLocaleDateString("en",{weekday:"short",month:"short",day:"numeric"}),
+                    pillars: donePillars,
+                    streak: newStreak,
+                  }];
+                  saved.history = newHistory.slice(-30);
+                }
+
+                // 2. Set lastDate to today so app thinks today already happened
+                saved.lastDate = today;
+
+                // 3. Clear all daily trackers for the new day
+                saved.checkedToday = Object.fromEntries(["fuel","move","rest","calm","connect","focus"].map(p=>[p,false]));
+                if (saved.fuel) { saved.fuel.meals=[]; saved.fuel.waterGlasses=0; saved.fuel.waterDate=""; }
+                if (saved.move) { saved.move.stepsToday=0; saved.move.stepsDate=""; saved.move.workouts=[]; }
+                if (saved.rest) { saved.rest.windDown=[]; saved.rest.quality=0; }
+                if (saved.calm) { saved.calm.stressLevel=0; saved.calm.mood=""; saved.calm.gratitude=[]; saved.calm.calmActivities=[]; }
+                if (saved.connect) { saved.connect.connections=[]; saved.connect.socialBattery=0; saved.connect.kindness=[]; }
+                if (saved.focus) { saved.focus.mit=""; saved.focus.pomodoros=0; saved.focus.distractions=[]; saved.focus.tasks=(saved.focus.tasks||[]).map(t=>({...t,done:false})); }
+
+                // 4. Save and reload
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+                window.location.reload();
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>📅 Simulate Next Day → Save & Reload</button>
 
               <button className="tap" onClick={()=>{
                 setSt(prev=>({...prev,showWeeklyCheckin:true}));
