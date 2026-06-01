@@ -3607,6 +3607,7 @@ export default function App() {
         lastStr = new Date(st.lastDate).toISOString().slice(0,10);
       } catch {
         lastStr = null;
+      }
     }
 
     const isNewDay = !lastStr || lastStr !== todayStr;
