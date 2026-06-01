@@ -2994,6 +2994,7 @@ function MonthlyLetter({ st, goBack, S }) {
       const res = await fetch("https://coresix-backend-production.up.railway.app/api/monthly-letter", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ deviceId: id, monthData }),
       });
       const data = await res.json();
       if (data.letter) setLetter(data);
@@ -3410,7 +3411,9 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
     setInsightLoading(false);
   };
 
+  if (loading) return (
     <div style={{textAlign:"center",padding:"48px 20px"}}>
+      <div style={{fontSize:32,marginBottom:12,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
       <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14}}>Analysing your patterns...</p>
     </div>
   );
