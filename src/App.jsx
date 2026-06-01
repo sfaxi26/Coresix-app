@@ -3588,6 +3588,13 @@ export default function App() {
 
   const stage = getStage(st.streak);
 
+  const getWeekKey = () => {
+    const d = new Date();
+    const startOfYear = new Date(d.getFullYear(),0,1);
+    const week = Math.ceil(((d-startOfYear)/86400000+startOfYear.getDay()+1)/7);
+    return `${d.getFullYear()}-W${week}`;
+  };
+
   useEffect(()=>{
     // Always compare using simple YYYY-MM-DD format
     const todayStr = new Date().toISOString().slice(0,10);
@@ -3662,12 +3669,6 @@ export default function App() {
     }
   },[]);
 
-  const getWeekKey = () => {
-    const d = new Date();
-    const startOfYear = new Date(d.getFullYear(),0,1);
-    const week = Math.ceil(((d-startOfYear)/86400000+startOfYear.getDay()+1)/7);
-    return `${d.getFullYear()}-W${week}`;
-  };
 
   useEffect(()=>{ saveState(st); },[st]);
 
