@@ -401,6 +401,138 @@ const LADDER = {
   ],
 };
 
+// ── MINI REASSESSMENT QUESTIONS ─────────────────────────
+const MINI_ASSESSMENT = {
+  fuel: [
+    { q:"How would you describe your eating habits now compared to when you started?", options:["Still the same","Slightly more structured","Noticeably better","Much more intentional"] },
+    { q:"How is your energy throughout the day?", options:["Same as before","A little more stable","Noticeably better","Much more consistent"] },
+  ],
+  move: [
+    { q:"How active do you feel compared to 7 days ago?", options:["About the same","A little more active","Noticeably more active","Much more active"] },
+    { q:"How does your body feel physically?", options:["Same as before","Slightly better","Noticeably better","Stronger and energised"] },
+  ],
+  rest: [
+    { q:"How is your sleep compared to when you started?", options:["Still struggling","Slightly better","Noticeably improved","Much better"] },
+    { q:"How do you feel when you wake up?", options:["Still tired","A little more rested","Noticeably more rested","Refreshed and ready"] },
+  ],
+  calm: [
+    { q:"How are your stress levels compared to 7 days ago?", options:["Still high","Slightly more manageable","Noticeably calmer","Much calmer"] },
+    { q:"How would you rate your overall mental state?", options:["Same as before","A little more balanced","Noticeably more grounded","Very calm and centred"] },
+  ],
+  connect: [
+    { q:"How connected do you feel to the people around you?", options:["Same as before","Slightly more connected","Noticeably more connected","Much more connected"] },
+    { q:"How intentional have your relationships felt this week?", options:["Same as before","A little more intentional","Noticeably more meaningful","Much deeper"] },
+  ],
+  focus: [
+    { q:"How focused do you feel compared to 7 days ago?", options:["About the same","Slightly more focused","Noticeably more focused","Much sharper"] },
+    { q:"How productive have you been this week?", options:["Same as before","A little more productive","Noticeably more productive","Highly productive"] },
+  ],
+};
+
+const RUNG_MIN_DAYS = [7, 14, 21, 30]; // min days required per rung before level up
+
+const canLevelUp = (ladder, pid) => {
+  const rung = ladder[pid]?.rung || 0;
+  const days = ladder[pid]?.days || 0;
+  const minDays = RUNG_MIN_DAYS[rung] || 7;
+  return days >= minDays && rung < 4;
+};
+
+const daysToLevelUp = (ladder, pid) => {
+  const rung = ladder[pid]?.rung || 0;
+  const days = ladder[pid]?.days || 0;
+  const minDays = RUNG_MIN_DAYS[rung] || 7;
+  return Math.max(0, minDays - days);
+};
+
+// ── MINI PILLAR ASSESSMENTS (after 7 days) ──────────────
+const MINI_ASSESSMENTS = {
+  fuel: {
+    title: "⚡ Fuel Check-in",
+    intro: "You've been working on your Fuel habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How do your energy levels feel compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly more stable",s:2},{t:"Noticeably better",s:3},{t:"Much more energised",s:4}]
+      },
+      {
+        q: "How intentional are your eating habits now?",
+        options: [{t:"Still pretty random",s:1},{t:"A bit more structured",s:2},{t:"More consistent than before",s:3},{t:"Very intentional",s:4}]
+      },
+    ]
+  },
+  move: {
+    title: "💪 Move Check-in",
+    intro: "You've been doing your Move habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How active do you feel compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly more active",s:2},{t:"Noticeably more active",s:3},{t:"Much more active",s:4}]
+      },
+      {
+        q: "Has your body felt different this week?",
+        options: [{t:"Not really",s:1},{t:"A little lighter or stronger",s:2},{t:"Definitely more energised",s:3},{t:"Significantly better",s:4}]
+      },
+    ]
+  },
+  rest: {
+    title: "😴 Rest Check-in",
+    intro: "You've been working on your Rest habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How is your sleep quality compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly better",s:2},{t:"Noticeably better",s:3},{t:"Much better",s:4}]
+      },
+      {
+        q: "How do you feel in the mornings now?",
+        options: [{t:"Still tired most days",s:1},{t:"A little more rested",s:2},{t:"More refreshed than before",s:3},{t:"Waking up energised",s:4}]
+      },
+    ]
+  },
+  calm: {
+    title: "🧘 Calm Check-in",
+    intro: "You've been working on your Calm habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How do you handle stress now compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly calmer",s:2},{t:"Noticeably more grounded",s:3},{t:"Much calmer and in control",s:4}]
+      },
+      {
+        q: "How present do you feel in daily life?",
+        options: [{t:"Still scattered and reactive",s:1},{t:"A little more aware",s:2},{t:"More present than before",s:3},{t:"Very present and grounded",s:4}]
+      },
+    ]
+  },
+  connect: {
+    title: "🤝 Connect Check-in",
+    intro: "You've been working on your Connect habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How connected do you feel to people around you compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly more connected",s:2},{t:"Noticeably more connected",s:3},{t:"Much more connected",s:4}]
+      },
+      {
+        q: "How intentional are your relationships now?",
+        options: [{t:"Still pretty passive",s:1},{t:"A little more proactive",s:2},{t:"Reaching out more than before",s:3},{t:"Very intentional about connection",s:4}]
+      },
+    ]
+  },
+  focus: {
+    title: "🎯 Focus Check-in",
+    intro: "You've been working on your Focus habit for 7 days. Let's see what's changed.",
+    questions: [
+      {
+        q: "How focused do you feel compared to 7 days ago?",
+        options: [{t:"About the same",s:1},{t:"Slightly sharper",s:2},{t:"Noticeably more focused",s:3},{t:"Much more focused and clear",s:4}]
+      },
+      {
+        q: "How clear are your daily priorities now?",
+        options: [{t:"Still scattered",s:1},{t:"A little clearer",s:2},{t:"More structured than before",s:3},{t:"Very clear and intentional",s:4}]
+      },
+    ]
+  },
+};
+
 const QUESTIONNAIRE = [
   { id:"fuel",    emoji:"⚡", question:"How would you describe your eating habits?", answers:[{t:"I eat whatever, whenever — not much thought",s:1},{t:"Pretty decent but inconsistent — good and bad days",s:2},{t:"I eat well most of the time — mostly whole foods",s:3},{t:"Very intentional — I plan and prioritise nutrition",s:4}] },
   { id:"move",    emoji:"💪", question:"How active are you on a typical week?", answers:[{t:"Mostly sedentary — I sit most of the day",s:1},{t:"Light activity — occasional walks or casual exercise",s:2},{t:"Moderately active — I exercise 2-3 times a week",s:3},{t:"Very active — I train regularly and hit my step goals",s:4}] },
@@ -3458,6 +3590,10 @@ export default function App() {
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:""});
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
+  const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
+  const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
+  const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
+  const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
   const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
@@ -3688,6 +3824,65 @@ export default function App() {
     setShowCoach({title, message, onContinue, ...opts});
   };
 
+  // ── WEEKLY PILLAR SUGGESTION ENGINE ─────────────────────
+  const suggestNextWeekPillars = (weeklyAnswers, impactHistory) => {
+    const PILLAR_NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"🎯 Focus"};
+    const PILLAR_REASONS = {
+      fuel:    "Your energy and nutrition need attention",
+      move:    "Movement will boost your energy and mood",
+      rest:    "Sleep affects everything — it needs focus",
+      calm:    "Your stress levels need attention",
+      connect: "Connection has been low recently",
+      focus:   "Your focus and clarity need work",
+    };
+
+    // Score each pillar — lower = more attention needed
+    const scores = {};
+    PIDS.forEach(pid => {
+      let score = st.scores[pid] || 2; // Base from initial assessment
+
+      // Adjust by this week's impact rating (0-3)
+      if (weeklyAnswers[pid] !== undefined) {
+        score = (score + weeklyAnswers[pid]) / 2;
+      }
+
+      // Adjust by recent history — if not worked on recently, boost priority
+      const recentDays = (st.history||[]).slice(-7).filter(h=>h.pillars?.includes(pid)).length;
+      if (recentDays === 0) score -= 0.5; // Not worked on recently = higher priority
+
+      // Cross-pillar boost — if rest is low, boost focus too
+      const RIPPLE = {rest:["focus","calm"],move:["calm"],calm:["connect","focus"]};
+      if (RIPPLE[pid]) {
+        RIPPLE[pid].forEach(affected => {
+          if (weeklyAnswers[affected] !== undefined && weeklyAnswers[affected] <= 1) {
+            score -= 0.3;
+          }
+        });
+      }
+
+      scores[pid] = score;
+    });
+
+    // Sort by lowest score = most needs attention
+    const sorted = [...PIDS].sort((a,b)=>scores[a]-scores[b]);
+    const top3 = sorted.slice(0,3);
+
+    // Build reasons
+    const reasons = {};
+    top3.forEach(pid => {
+      const weekScore = weeklyAnswers[pid];
+      if (weekScore !== undefined && weekScore <= 1) {
+        reasons[pid] = `Rated low this week — needs attention`;
+      } else if ((st.history||[]).slice(-7).filter(h=>h.pillars?.includes(pid)).length === 0) {
+        reasons[pid] = `Not worked on recently — time to focus here`;
+      } else {
+        reasons[pid] = PILLAR_REASONS[pid];
+      }
+    });
+
+    return { pillars: top3, reasons, scores };
+  };
+
   const getWeakest3 = () => {
     const scores=st.scores;
     if(!Object.keys(scores).length) return PIDS.slice(0,3);
@@ -3773,17 +3968,48 @@ export default function App() {
   const handleUnlock = pid => {
     const rung = st.ladder[pid].rung;
     if (rung>=4) return;
+    if (!canLevelUp(st.ladder, pid)) return;
+    // Start mini assessment before leveling up
+    setMiniAssessment({pid, step:0, answers:[]});
+  };
+
+  // ── COMPLETE MINI ASSESSMENT ──
+  const completeMiniAssessment = (pid, answers) => {
+    const rung = st.ladder[pid].rung;
+    // Calculate new score from answers (0-3 scale)
+    const avgAnswer = answers.reduce((a,b)=>a+b,0) / answers.length;
+    const newScore = Math.min(4, Math.round((avgAnswer + 1)));
+    const oldScore = st.scores[pid] || 1;
+    const improved = newScore > oldScore;
+
+    setMiniAssessment(null);
+
     const unlockMsg = getRand(COACHING.unlock_coaching);
+    const p = PILLARS[pid];
+
     showCoaching(
-      "Rung " + (rung+1) + " Mastered ⭐",
-      unlockMsg,
+      improved
+        ? `${p.emoji} Your ${p.name} score improved! ${oldScore}/4 → ${newScore}/4`
+        : `${p.emoji} Rung ${rung+1} Complete!`,
+      (improved
+        ? `Real growth is happening. Your ${p.name} score moved from ${oldScore}/4 to ${newScore}/4 — that is not a number. That is who you are becoming.
+
+`
+        : "") + unlockMsg,
       ()=>{
         setShowCoach(null);
-        const newLadder = {...st.ladder,[pid]:{rung:rung+1,days:0,selected:null}};
-        update({ladder:newLadder});
+        const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],rung:rung+1,days:0,selected:null}};
+        const newScores = {...st.scores,[pid]:newScore};
+        update({ladder:newLadder, scores:newScores});
         goTo(`pick_${pid}`);
       },
-      {icon:"🔓",color:"#8B5CF6",bg:"linear-gradient(135deg,#F5F3FF,white)",border:"#DDD6FE",continueLabel:"Pick my next habit →"}
+      {
+        icon: improved ? "📈" : "🔓",
+        color:"#8B5CF6",
+        bg:"linear-gradient(135deg,#F5F3FF,white)",
+        border:"#DDD6FE",
+        continueLabel:"Pick my Rung " + (rung+2) + " habit →"
+      }
     );
   };
 
@@ -3888,13 +4114,15 @@ export default function App() {
                         const newAnswers = {...weeklyAnswers,[pid]:i};
                         setWeeklyAnswers(newAnswers);
                         if (weeklyStep+1 >= activePids.length) {
-                          // Save and show summary
+                          // Save impact data
                           const week = getWeekKey();
                           const newImpact = {...st.weeklyImpact,...newAnswers};
                           const newHistory = [...(st.impactHistory||[]),{week,answers:newAnswers,date:new Date().toLocaleDateString("en",{month:"short",day:"numeric"}),streak:st.streak}];
                           update({weeklyImpact:newImpact,impactHistory:newHistory.slice(-12),showWeeklyCheckin:false});
-                          // Sync to backend
                           syncImpact(week, newAnswers);
+                          // Generate pillar suggestion for next week
+                          const suggestion = suggestNextWeekPillars(newAnswers, newHistory);
+                          setPillarSuggestion(suggestion);
                           setWeeklyStep(0);
                           setWeeklyAnswers({});
                           goTo("weekly_summary");
@@ -3916,6 +4144,145 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
+      {pillarSuggestion && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+
+            {/* Header */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Next Week</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>CoreSix suggests these 3 pillars</div>
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Based on this week's ratings and your patterns. You can confirm or choose your own.</p>
+            </div>
+
+            {/* Suggested pillars */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {pillarSuggestion.pillars.map((pid,i)=>{
+                const p = PILLARS[pid];
+                const reason = pillarSuggestion.reasons[pid];
+                return (
+                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
+                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
+                    </div>
+                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* All pillars — let user swap */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
+                  const p = PILLARS[pid];
+                  return (
+                    <button key={pid} onClick={()=>{
+                      // Swap this pillar with the lowest priority suggested one
+                      const newPillars = [...pillarSuggestion.pillars];
+                      newPillars[2] = pid; // Replace last suggested
+                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
+                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Confirm */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>{
+                update({selectedPillars: pillarSuggestion.pillars});
+                setPillarSuggestion(null);
+                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
+              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
+                ✅ Confirm These 3 Pillars for Next Week →
+              </button>
+              <button onClick={()=>{
+                setPillarSuggestion(null);
+                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
+              }} style={{...S.btnGhost,fontSize:13}}>
+                Keep current pillars
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MINI ASSESSMENT OVERLAY ── */}
+      {miniAssessment && (()=>{
+        const { pid, step, answers, rung } = miniAssessment;
+        const p = PILLARS[pid];
+        const assessment = MINI_ASSESSMENTS[pid];
+        const q = assessment?.questions[step];
+        const totalSteps = assessment?.questions.length || 2;
+        const isLast = step === totalSteps - 1;
+
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+
+              {/* Header */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                <div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Progress Check · {step+1} of {totalSteps}</div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:20,color:"#0f0f0f"}}>{assessment?.title}</div>
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  {Array.from({length:totalSteps},(_,i)=>(
+                    <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=step?p.color:"#e5e5e5",transition:"all 0.3s"}}/>
+                  ))}
+                </div>
+              </div>
+
+              {/* Intro on first step */}
+              {step===0 && (
+                <div style={{background:p.light,borderRadius:14,padding:"12px 14px",border:`1px solid ${p.border}`,marginBottom:16}}>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.6}}>{assessment?.intro}</p>
+                </div>
+              )}
+
+              {/* Question */}
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:"#0f0f0f",lineHeight:1.5,marginBottom:16,fontWeight:500}}>{q?.q}</p>
+
+              {/* Options */}
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+                {q?.options.map((opt,i)=>(
+                  <button key={i} onClick={()=>{
+                    const newAnswers = [...answers, opt.s];
+                    if (isLast) {
+                      completeMiniAssessment(pid, newAnswers, rung);
+                    } else {
+                      setMiniAssessment({pid, step:step+1, answers:newAnswers, rung});
+                    }
+                  }} style={{padding:"14px 16px",borderRadius:14,border:`1.5px solid #f0f0f0`,background:"white",cursor:"pointer",textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#333",lineHeight:1.5,transition:"all 0.2s",display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ddd",flexShrink:0}}/>
+                    {opt.t}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={()=>setMiniAssessment(null)} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Not ready yet
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── CHANGE PILLARS OVERLAY ── */}
       {showChangePillars && (
@@ -3976,6 +4343,144 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
+      {pillarSuggestion && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+
+            {/* Header */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Next Week</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>CoreSix suggests these 3 pillars</div>
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Based on this week's ratings and your patterns. You can confirm or choose your own.</p>
+            </div>
+
+            {/* Suggested pillars */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {pillarSuggestion.pillars.map((pid,i)=>{
+                const p = PILLARS[pid];
+                const reason = pillarSuggestion.reasons[pid];
+                return (
+                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
+                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
+                    </div>
+                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* All pillars — let user swap */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
+                  const p = PILLARS[pid];
+                  return (
+                    <button key={pid} onClick={()=>{
+                      // Swap this pillar with the lowest priority suggested one
+                      const newPillars = [...pillarSuggestion.pillars];
+                      newPillars[2] = pid; // Replace last suggested
+                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
+                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Confirm */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>{
+                update({selectedPillars: pillarSuggestion.pillars});
+                setPillarSuggestion(null);
+                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
+              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
+                ✅ Confirm These 3 Pillars for Next Week →
+              </button>
+              <button onClick={()=>{
+                setPillarSuggestion(null);
+                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
+              }} style={{...S.btnGhost,fontSize:13}}>
+                Keep current pillars
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MINI ASSESSMENT OVERLAY ── */}
+      {miniAssessment && (()=>{
+        const { pid, step, answers } = miniAssessment;
+        const p = PILLARS[pid];
+        const questions = MINI_ASSESSMENT[pid] || [];
+        const q = questions[step];
+        const rung = st.ladder[pid]?.rung || 0;
+        const totalSteps = questions.length;
+        if (!q) return null;
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+              {/* Header */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:2,textTransform:"uppercase"}}>
+                  Progress check · {step+1} of {totalSteps}
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  {questions.map((_,i)=>(
+                    <div key={i} style={{width:6,height:6,borderRadius:"50%",background:i<=step?p.color:"#e5e5e5",transition:"all 0.3s"}}/>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pillar badge */}
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+                <div style={{width:52,height:52,borderRadius:15,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,boxShadow:`0 6px 20px ${p.color}44`}}>{p.emoji}</div>
+                <div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f"}}>7 days on {p.name}!</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa"}}>Quick check — how has it gone?</div>
+                </div>
+              </div>
+
+              {/* Question */}
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:"#333",lineHeight:1.6,marginBottom:18,fontWeight:500}}>{q.q}</p>
+
+              {/* Options */}
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+                {q.options.map((opt,i)=>(
+                  <button key={i} onClick={()=>{
+                    const newAnswers = [...answers, i];
+                    if (step + 1 >= totalSteps) {
+                      completeMiniAssessment(pid, newAnswers);
+                    } else {
+                      setMiniAssessment({pid, step:step+1, answers:newAnswers});
+                    }
+                  }} style={{width:"100%",padding:"14px 18px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:p.color,fontWeight:500,lineHeight:1.4,transition:"all 0.2s"}}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={()=>setMiniAssessment(null)} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Not ready yet
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── COACHING OVERLAY ── */}
       {showCoach && (
@@ -4362,7 +4867,14 @@ export default function App() {
                       <div style={{width:44,height:44,borderRadius:13,background:isDone?"rgba(255,255,255,0.25)":p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,boxShadow:isDone?"none":`0 4px 14px ${p.color}44`,flexShrink:0,transition:"all 0.4s"}}>{isDone?"✓":p.emoji}</div>
                       <div style={{flex:1}}>
                         <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:isDone?"rgba(255,255,255,0.8)":p.color,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:isDone?"rgba(255,255,255,0.6)":"#aaa"}}>Rung {ladder.rung+1}/5 · {ladder.days} days</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:isDone?"rgba(255,255,255,0.6)":"#aaa"}}>
+                        {(()=>{
+                          const minDays = [7,14,21,30][ladder.rung]||7;
+                          const pct = Math.min(100, Math.round((ladder.days/minDays)*100));
+                          const canUnlock = ladder.days >= minDays;
+                          return `Rung ${ladder.rung+1}/5 · ${ladder.days}/${minDays} days${canUnlock?" · 🔓 Ready!":""}`;
+                        })()}
+                      </div>
                       </div>
                       {pid==="fuel"&&<button onClick={(e)=>{e.stopPropagation();goTo("fuel_layer");}} style={{background:"#FFFBEB",border:"1.5px solid #FDE68A",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#F59E0B",cursor:"pointer"}}>⚡ Track</button>}
                       {pid==="move"&&<button onClick={(e)=>{e.stopPropagation();goTo("move_layer");}} style={{background:"#ECFDF5",border:"1.5px solid #A7F3D0",borderRadius:8,padding:"4px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",cursor:"pointer"}}>💪 Track</button>}
@@ -4385,7 +4897,20 @@ export default function App() {
                               <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>✓ Done — I did this!</button>
                               <div style={{display:"flex",gap:8}}>
                                 <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={{...S.btnGhost,flex:1,fontSize:12,padding:"10px"}}>Change</button>
-                                {ladder.rung<4&&<button className="tap" onClick={()=>handleUnlock(pid)} style={{...S.btnGhost,flex:1,fontSize:12,padding:"10px"}}>🔓 Level up</button>}
+                                {ladder.rung<4&&(()=>{
+                                  const ready = canLevelUp(st.ladder, pid);
+                                  const daysLeft = daysToLevelUp(st.ladder, pid);
+                                  return (
+                                    <button className="tap" onClick={()=>ready&&handleUnlock(pid)}
+                                      style={{...S.btnGhost,flex:1,fontSize:11,padding:"10px",
+                                        border:`1.5px solid ${ready?"#8B5CF6":"#e8e8e8"}`,
+                                        color:ready?"#8B5CF6":"#bbb",
+                                        background:ready?"#F5F3FF":"white",
+                                        cursor:ready?"pointer":"default"}}>
+                                      {ready ? "🔓 Level up!" : `🔒 ${daysLeft}d left`}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             </div>
                           )}
@@ -4748,6 +5273,15 @@ export default function App() {
             })()}
 
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {/* Show pillar suggestion if available */}
+              {pillarSuggestion && (
+                <button className="tap" onClick={()=>{}} style={{...S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144"),position:"relative",overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <span>🎯 Choose Next Week's Pillars</span>
+                    <span style={{background:"rgba(255,255,255,0.25)",borderRadius:6,padding:"2px 6px",fontSize:11}}>AI suggestion ready</span>
+                  </div>
+                </button>
+              )}
               <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
               <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Full Dashboard</button>
             </div>
@@ -4816,7 +5350,13 @@ export default function App() {
                       <div style={{width:42,height:42,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 12px ${p.color}33`,flexShrink:0}}>{p.emoji}</div>
                       <div style={{flex:1}}>
                         <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{stars} · {ladder.days} days on this habit</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>
+                        {stars} · {ladder.days} days on this habit
+                        {ladder.rung<4&&(canLevelUp(st.ladder,pid)
+                          ? <span style={{color:"#8B5CF6",fontWeight:600}}> · Ready to level up! 🔓</span>
+                          : <span> · {daysToLevelUp(st.ladder,pid)}d to next rung</span>
+                        )}
+                      </div>
                       </div>
                       <div style={{textAlign:"right"}}>
                         <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:p.color}}>{score||"–"}{score?"/4":""}</div>
