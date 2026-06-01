@@ -1182,10 +1182,8 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
 
 // ── MOVE LAYER COMPONENT ─────────────────────────────────
 function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
-  const [view, setView] = useState("dashboard"); // dashboard | log | steps
   const [moveInsight, setMoveInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
-  const [customWorkout, setCustomWorkout] = useState({name:"",duration:"",sets:"",unit:"min"});
   const [stepInput, setStepInput] = useState("");
 
   const move = st.move || {};
@@ -1492,11 +1490,9 @@ function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits }) {
   const [view, setView] = useState("dashboard");
   const [restInsight, setRestInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
-  const [bedtime, setBedtime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
 
   const rest = st.rest || {};
-  const today = new Date().toISOString().slice(0,10);
   const windDone = rest.windDown || [];
   const windPct = Math.round((windDone.length / WIND_DOWN_ITEMS.length) * 100);
 
@@ -1743,11 +1739,9 @@ function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits }) {
   const [insightLoading, setInsightLoading] = useState(false);
   const [gratitudeInput, setGratitudeInput] = useState("");
   const [timer, setTimer] = useState(null);
-  const [timerSecs, setTimerSecs] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
 
   const calm = st.calm || {};
-  const today = new Date().toISOString().slice(0,10);
   const doneFull = calm.calmActivities || [];
   const gratitude = calm.gratitude || [];
   const stressLevel = calm.stressLevel || 0;
@@ -1995,9 +1989,7 @@ function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits 
   const [newRel, setNewRel] = useState({name:"", importance:"close", notes:""});
 
   const connect = st.connect || {};
-  const today = new Date().toISOString().slice(0,10);
   const todayConns = (connect.connections||[]).filter(c=>c.date===today);
-  const kindness = connect.kindness || [];
   const socialBattery = connect.socialBattery || 0;
   const relationships = connect.relationships || [];
 
@@ -2344,11 +2336,9 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
   const [distractionInput, setDistractionInput] = useState("");
   const [pomTimer, setPomTimer] = useState(0);
   const [pomRunning, setPomRunning] = useState(false);
-  const [pomInterval, setPomIntervalState] = useState(null);
   const [pomPhase, setPomPhase] = useState("work"); // work | break
   const [rituals, setRituals] = useState([]);
 
-  const focus = st.focus || {};
   const today = new Date().toISOString().slice(0,10);
   const tasks = focus.tasks || [];
   const weeklyGoals = focus.weeklyGoals || [];
@@ -3001,10 +2991,8 @@ function MonthlyLetter({ st, goBack, S }) {
         streak: st.streak,
       };
 
-      const res = await fetch("https://coresix-backend-production.up.railway.app/api/monthly-letter", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ deviceId: id, monthData }),
       });
       const data = await res.json();
       if (data.letter) setLetter(data);
@@ -3228,10 +3216,8 @@ function NextWeekPlan({ st, goBack, S }) {
     setError(null);
     try {
       const id = localStorage.getItem("coresix_device_id");
-      if (!id) throw new Error("No device ID");
       const weekData = {
         fuel: st.fuel, move: st.move, rest: st.rest,
-        calm: st.calm, connect: st.connect, focus: st.focus,
         streak: st.streak, weeklyImpact: st.weeklyImpact,
       };
       const res = await fetch("https://coresix-backend-production.up.railway.app/api/next-week-plan", {
@@ -3423,9 +3409,7 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
     setInsightLoading(false);
   };
 
-  if (loading) return (
     <div style={{textAlign:"center",padding:"48px 20px"}}>
-      <div style={{fontSize:32,marginBottom:12,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
       <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14}}>Analysing your patterns...</p>
     </div>
   );
@@ -3592,8 +3576,6 @@ export default function App() {
   const [showChangePillars, setShowChangePillars] = useState(false);
   const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
   const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
-  const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
-  const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
   const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
@@ -3614,13 +3596,11 @@ export default function App() {
         lastStr = new Date(st.lastDate).toISOString().slice(0,10);
       } catch {
         lastStr = null;
-      }
     }
 
     const isNewDay = !lastStr || lastStr !== todayStr;
 
     if (isNewDay) {
-      // Reset everything for the new day
       update({
         checkedToday: Object.fromEntries(PIDS.map(p=>[p,false])),
         fuel: {
