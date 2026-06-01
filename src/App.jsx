@@ -2991,6 +2991,7 @@ function MonthlyLetter({ st, goBack, S }) {
         streak: st.streak,
       };
 
+      const res = await fetch("https://coresix-backend-production.up.railway.app/api/monthly-letter", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
       });
