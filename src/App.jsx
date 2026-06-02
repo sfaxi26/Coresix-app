@@ -178,6 +178,38 @@ const EXPLORE = {
   ],
   articles: [
     {
+      id:"rung_science",
+      emoji:"🪜",
+      title:"Why the Rung System Works",
+      duration:"4 min",
+      color:"#10B981",
+      bg:"#ECFDF5",
+      tag:"CoreSix Science",
+      content:[
+        { heading:"The Foundation Principle", body:"Every rung in CoreSix is built on one idea: you cannot build quality habits on top of a broken foundation. This is not a metaphor — it is biology. Trying to master nutrition without structure, or deep work without a clear priority, is like building on sand. The foundation rung prepares the biological and psychological conditions for every subsequent rung to actually work." },
+        { heading:"Why 3 Habits Per Rung", body:"BJ Fogg's research shows that habit stacking — where one habit becomes the anchor for the next — works best in small clusters. One habit is too simple to build a real foundation. Six habits at once overwhelms the brain's change capacity. Three is the proven sweet spot: meaningful breadth, still achievable, each one reinforcing the others." },
+        { heading:"Why You Must Earn Each Rung", body:"James Clear's identity research shows that self-perception changes through repeated small actions — not through big decisions. Each check-in is a vote for the person you are becoming. 15 check-ins across 3 habits in one rung is not arbitrary — it is the minimum repetition needed to begin rewiring the neural pathway. Rushing this process produces fragile habits. Earning it produces lasting ones." },
+        { heading:"The Timeline Is The Point", body:"3 habits per rung. 5 check-ins each. 5 rungs per pillar. Roughly 4 months to full mastery of one pillar. This feels slow — and that is exactly why it works. Research consistently shows that habits formed over longer periods are significantly more resistant to relapse. The people who transform their lives are not the ones who changed everything at once. They are the ones who changed one small thing at a time and never stopped." },
+      ]
+    },
+    {
+      id:"foundation_research",
+      emoji:"🔬",
+      title:"The Science Behind Each Foundation",
+      duration:"5 min",
+      color:"#8B5CF6",
+      bg:"#F5F3FF",
+      tag:"Research",
+      content:[
+        { heading:"⚡ Fuel — Why Hydration First", body:"37% of people confuse thirst with hunger — fixing hydration first clarifies hunger signals before addressing food quality. Drinking water before meals reduces calorie intake by 13% on average (University of Birmingham). Structured meal timing reduces cortisol spikes and stabilises blood sugar, making every other food habit easier. You cannot build good eating habits on top of a dehydrated, unstructured biological base." },
+        { heading:"💪 Move — Why 5 Push-Ups First", body:"Identity research (James Clear) shows small repeated actions change self-perception before behaviour changes. The neural pathway for a habit forms through repetition, not intensity — 5 push-ups daily for 30 days builds a stronger pathway than 50 push-ups twice. BJ Fogg's Motivation Wave shows most days are low-motivation days. Rung 1 habits are specifically designed to be done at motivation zero." },
+        { heading:"😴 Rest — Why Making Your Bed First", body:"Admiral McRaven's research shows bed-making is a keystone habit — it creates a cascade of ordered behaviours throughout the day. Keystone habit research (Charles Duhigg) shows some small habits create ripple effects across unrelated areas. Bed-making correlates with higher productivity, stronger wellbeing, and better decision-making — not because it matters directly, but because it signals to the brain: I am in control today." },
+        { heading:"🧘 Calm — Why 3 Breaths First", body:"3 slow breaths activate the parasympathetic nervous system in under 30 seconds — measurable cortisol reduction. The pause between stimulus and response is the foundation of all emotional regulation. Everything else — meditation, gratitude, mindfulness — builds on this pause. BJ Fogg's celebration principle shows that a 30-second habit creating an immediate positive feeling is what wires it permanently into the brain." },
+        { heading:"🤝 Connect — Why One Message First", body:"Even minimal social contact reduces cortisol and increases oxytocin — one genuine message has a measurable biological effect (Holt-Lunstad). People consistently underestimate how much others appreciate being reached out to — fixing this belief requires action, not thinking. One outreach creates a connection loop. The foundation habit starts that loop." },
+        { heading:"🎯 Focus — Why Writing Your MIT First", body:"Willpower is highest in the morning and depletes with every decision (Baumeister). Writing MIT before opening any app uses peak willpower for what matters most. Writing a specific intention increases follow-through by 91% (Gollwitzer, NYU). The act of writing activates the prefrontal cortex and orients attention before distractions compete for it." },
+      ]
+    },
+    {
       id:"willpower_brain",
       emoji:"🧠",
       title:"How Your Brain Controls Willpower",
@@ -578,7 +610,12 @@ const saveState = s => { try { localStorage.setItem(SAVE_KEY,JSON.stringify(s));
 const initState = () => ({
   name:"", screen:"splash",
   qIndex:0, qAnswers:{}, scores:{}, profile:{},
-  ladder: Object.fromEntries(PIDS.map(pid=>[pid,{rung:0,days:0,selected:null}])),
+  ladder: Object.fromEntries(PIDS.map(pid=>[pid,{
+    rung: 0,
+    habits: [],     // [{habit, checkins, mastered}] — active habits in current rung
+    days: 0,        // total checkins across all habits this rung
+    selected: null, // current primary habit (for backward compat)
+  }])),
   checkedToday: Object.fromEntries(PIDS.map(pid=>[pid,false])),
   streak:0, lastDate:null, history:[], tab:"today",
   weeklyImpact:{}, impactHistory:[],
@@ -629,6 +666,15 @@ const migrateState = (s) => {
   if (!s.move) s.move = {stepGoal:7000,stepsToday:0,stepsDate:"",workouts:[]};
   if (!s.rest) s.rest = {bedtime:"",wakeTime:"",sleepDate:"",quality:0,windDown:[],sleepHistory:[]};
   if (!s.calm) s.calm = {stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""};
+  // Migrate ladder to new multi-habit format
+  if (s.ladder) {
+    Object.keys(s.ladder).forEach(pid => {
+      const l = s.ladder[pid];
+      if (!l.habits) {
+        l.habits = l.selected ? [{habit:l.selected,checkins:l.days||0,mastered:(l.days||0)>=5}] : [];
+      }
+    });
+  }
   if (!s.connect) s.connect = {connections:[],socialBattery:0,kindness:[],relationships:[],connectDate:""};
   if (!s.focus) s.focus = {mit:"",pomodoros:0,pomodoroMins:25,distractions:[],deepWorkMins:0,energyLevel:0,tasks:[],weeklyGoals:[],focusDate:""};
   return s;
@@ -3946,8 +3992,20 @@ export default function App() {
   // ── CHECK IN ──
   const handleCheckIn = pid => {
     const newChecked = {...st.checkedToday,[pid]:true};
-    const today = new Date().toISOString().split('T')[0]; // ISO format: 2026-05-30
-    const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],days:st.ladder[pid].days+1}};
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Update ladder - increment days AND per-habit checkins
+    const ladder = st.ladder[pid];
+    const selected = ladder.selected;
+    const habits = ladder.habits || [];
+    const updatedHabits = habits.map(h => {
+      if (h.habit === selected) {
+        const newCheckins = (h.checkins||0) + 1;
+        return {...h, checkins: newCheckins, mastered: newCheckins >= 5};
+      }
+      return h;
+    });
+    const newLadder = {...st.ladder,[pid]:{...ladder, days:(ladder.days||0)+1, habits:updatedHabits}};
     const allDone = activePids.every(p=>p===pid||newChecked[p]);
     const newStreak = allDone ? st.streak+1 : st.streak;
     const coachMsg = getRand(COACHING.checkin_coaching);
@@ -3981,9 +4039,16 @@ export default function App() {
   const handleUnlock = pid => {
     const rung = st.ladder[pid].rung;
     if (rung>=4) return;
-    if (!canLevelUp(st.ladder, pid)) return;
-    // Start mini assessment before leveling up
-    setMiniAssessment({pid, step:0, answers:[]});
+    const ladder = st.ladder[pid];
+    const habits = ladder.habits || [];
+    const masteredCount = habits.filter(h=>h.mastered).length;
+    const minMastered = 3;
+    if (masteredCount < minMastered) {
+      const needed = minMastered - masteredCount;
+      showToast(`⏳ Master ${needed} more habit${needed>1?"s":""} first (${masteredCount}/${minMastered} done)`, "#8B5CF6", 3000);
+      return;
+    }
+    setMiniAssessment({pid, step:0, answers:[], rung});
   };
 
   // ── COMPLETE MINI ASSESSMENT ──
@@ -4031,9 +4096,13 @@ export default function App() {
     const rung = st.ladder[pid].rung;
     const rungCoach = COACHING.rung_coaching[pid]?.[rung];
     const p = PILLARS[pid];
-    update({ladder:{...st.ladder,[pid]:{...st.ladder[pid],selected:habit,days:0}}});
-    // Sync to backend
-    syncLadder(pid, rung, 0, habit);
+    const ladder = st.ladder[pid];
+    const habits = ladder.habits || [];
+    // Add new habit to rung habits if not already there
+    const alreadyAdded = habits.some(h=>h.habit===habit);
+    const newHabits = alreadyAdded ? habits : [...habits, {habit, checkins:0, mastered:false}];
+    update({ladder:{...st.ladder,[pid]:{...ladder, selected:habit, habits:newHabits}}});
+    syncLadder(pid, rung, ladder.days||0, habit);
     if (rungCoach) {
       showCoaching(
         `${p.emoji} ${p.name} · ${LADDER[pid][rung].title}`,
@@ -4909,8 +4978,53 @@ export default function App() {
                           <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>👆 Pick my habit for this rung</button>
                         </div>
                       ) : (
-                        <div>
-                          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:isDone?"#aaa":"#0f0f0f",lineHeight:1.6,textDecoration:isDone?"line-through":"none",marginBottom:isDone?0:14}}>{selected}</p>
+                        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                          {(()=>{
+                            const habits = ladder.habits||[];
+                            const masteredCount = habits.filter(h=>h.mastered).length;
+                            const lastHabit = habits[habits.length-1];
+                            const canAdd = habits.length>0 && habits.length<3 && lastHabit && (lastHabit.checkins||0)>=5;
+                            const canUnlock = masteredCount>=3 && ladder.rung<4;
+                            return (
+                              <>
+                                {habits.map((h,i)=>(
+                                  <div key={i} style={{padding:"10px 12px",borderRadius:12,background:h.mastered?p.light:"#f8f8f8",border:`1px solid ${h.mastered?p.border:"#eee"}`}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:h.mastered?0:6}}>
+                                      <span style={{fontSize:13}}>{h.mastered?"✅":"🎯"}</span>
+                                      <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:h.mastered?p.color:"#444",fontWeight:h.mastered?600:400,flex:1,lineHeight:1.4}}>{h.habit}</span>
+                                    </div>
+                                    {!h.mastered&&(
+                                      <div style={{display:"flex",alignItems:"center",gap:4,marginLeft:21,marginTop:4}}>
+                                        {Array.from({length:5},(_,j)=>(
+                                          <div key={j} style={{width:10,height:10,borderRadius:"50%",background:j<(h.checkins||0)?p.color:"#e0e0e0"}}/>
+                                        ))}
+                                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginLeft:4}}>{h.checkins||0}/5 to master</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0"}}>
+                                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{masteredCount}/3 mastered · Rung {ladder.rung+1}/5</span>
+                                  {canUnlock&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:700}}>🔓 Ready!</span>}
+                                </div>
+                                {!isDone&&(
+                                  <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>✓ Done — I did this!</button>
+                                )}
+                                <div style={{display:"flex",gap:8}}>
+                                  {canAdd&&(
+                                    <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={{flex:2,padding:"10px",borderRadius:12,border:`1.5px solid ${p.color}`,background:p.light,color:p.color,fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                                      + Add habit ({habits.length}/3)
+                                    </button>
+                                  )}
+                                  {ladder.rung<4&&(
+                                    <button className="tap" onClick={()=>handleUnlock(pid)} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${canUnlock?p.color:"#e8e8e8"}`,background:canUnlock?p.light:"white",color:canUnlock?p.color:"#bbb",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                      {canUnlock?"🔓 Level up!":  `🔒 ${3-masteredCount} more`}
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })()}
                           {!isDone&&(
                             <div style={{display:"flex",flexDirection:"column",gap:8}}>
                               <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>✓ Done — I did this!</button>
