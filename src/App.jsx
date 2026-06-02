@@ -2989,6 +2989,11 @@ function MonthlyLetter({ st, goBack, S }) {
         connect: st.connect,
         focus: st.focus,
         streak: st.streak,
+        history: (st.history||[]).slice(-30),
+        weeklyImpact: st.weeklyImpact || {},
+        impactHistory: (st.impactHistory||[]).slice(-4),
+        selectedPillars: st.selectedPillars,
+        scores: st.scores,
       };
 
       const res = await fetch("https://coresix-backend-production.up.railway.app/api/monthly-letter", {
@@ -3054,7 +3059,8 @@ function MonthlyLetter({ st, goBack, S }) {
               <div style={{display:"flex",gap:12}}>
                 {[
                   {label:"Days active",value:letter.stats?.totalDays||0,unit:"/30"},
-                  {label:"Current streak",value:letter.stats?.streak||0,unit:"days"},
+                  {label:"Streak",value:letter.stats?.streak||0,unit:"days"},
+                  {label:"Pillars active",value:Object.keys(letter.stats?.pillarStats||{}).length,unit:"/6"},
                 ].map(s=>(
                   <div key={s.label} style={{flex:1,textAlign:"center",background:"rgba(255,255,255,0.07)",borderRadius:14,padding:"14px 8px"}}>
                     <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:32,color:"white",lineHeight:1}}>{s.value}</div>
