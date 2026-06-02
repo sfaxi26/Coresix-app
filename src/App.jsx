@@ -3668,6 +3668,16 @@ export default function App() {
     if (dayOfWeek===6 && !alreadyDone && st.streak>0) {
       update({showWeeklyCheckin:true});
     }
+
+    // Auto-suggest new pillars every 7 days (new week starting)
+    const history = JSON.parse(localStorage.getItem(SAVE_KEY)||"{}").history || [];
+    const totalDays = history.length;
+    const suggestionDoneWeek = localStorage.getItem("coresix_suggestion_week");
+    if (totalDays > 0 && totalDays % 7 === 0 && suggestionDoneWeek !== thisWeek) {
+      localStorage.setItem("coresix_suggestion_week", thisWeek);
+      const suggestion = suggestNextWeekPillars({}, history);
+      setTimeout(()=>setPillarSuggestion(suggestion), 800);
+    }
   },[]);
 
 
@@ -3722,6 +3732,17 @@ export default function App() {
   const [warnings, setWarnings] = useState([]);
 
   // Load predictive warnings on app start
+  // Check if suggestion was flagged before reload
+  useEffect(()=>{
+    if (localStorage.getItem("coresix_show_suggestion") === "1") {
+      localStorage.removeItem("coresix_show_suggestion");
+      setTimeout(()=>{
+        const suggestion = suggestNextWeekPillars({}, st.history||[]);
+        setPillarSuggestion(suggestion);
+      }, 1000);
+    }
+  },[]);
+
   useEffect(()=>{
     const loadWarnings = async () => {
       const id = localStorage.getItem("coresix_device_id");
@@ -4590,7 +4611,13 @@ export default function App() {
                 if (saved.connect) { saved.connect.connections=[]; saved.connect.socialBattery=0; saved.connect.kindness=[]; }
                 if (saved.focus) { saved.focus.mit=""; saved.focus.pomodoros=0; saved.focus.distractions=[]; saved.focus.tasks=(saved.focus.tasks||[]).map(t=>({...t,done:false})); }
 
-                // 4. Save and reload
+                // 4. Check if new week — flag suggestion to show on reload
+                const newTotalDays = (saved.history||[]).length;
+                if (newTotalDays > 0 && newTotalDays % 7 === 0) {
+                  localStorage.setItem("coresix_show_suggestion", "1");
+                }
+
+                // 5. Save and reload
                 localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
                 window.location.reload();
               }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>📅 Simulate Next Day → Save & Reload</button>
