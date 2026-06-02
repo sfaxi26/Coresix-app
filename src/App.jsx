@@ -702,7 +702,7 @@ function CoachCard({ icon, title, message, color="#6D28D9", bg="linear-gradient(
 }
 
 // ── FUEL LAYER COMPONENT ─────────────────────────────────
-function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAIInsight }) {
+function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAIInsight, buildRungContext }) {
   const [view, setView] = useState("dashboard"); // dashboard | setup | log | photo
   const [logSearch, setLogSearch] = useState("");
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -740,6 +740,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const habitAnalysis = analyzeFuelHabit();
+    const rungCtx = buildRungContext ? buildRungContext("fuel") : {};
     const context = {
       habit: fuelHabit,
       meals_logged: todayMeals.length,
@@ -1227,7 +1228,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
 
 
 // ── MOVE LAYER COMPONENT ─────────────────────────────────
-function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
+function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits, buildRungContext }) {
   const [moveInsight, setMoveInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
   const [stepInput, setStepInput] = useState("");
@@ -1278,6 +1279,7 @@ function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const ha = analyzeMovement();
+    const rungCtx = buildRungContext ? buildRungContext("move") : {};
     const context = JSON.stringify({
       habit: moveHabit,
       steps_today: stepsToday,
@@ -1287,6 +1289,7 @@ function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits }) {
       workout_names: todayWorkouts.map(w=>w.name).join(", "),
       total_minutes: totalMinutes,
       habit_met: ha?.met,
+      ...rungCtx,
     });
     const insight = await fetchAIInsight("move_insight", context);
     setMoveInsight(insight || "Every step counts. Keep moving — your body notices even when your mind doesn't.");
@@ -1532,7 +1535,7 @@ const WIND_DOWN_ITEMS = [
   { id:"read",     emoji:"📖", label:"Read a book instead of scrolling" },
 ];
 
-function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits }) {
+function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits, buildRungContext }) {
   const [view, setView] = useState("dashboard");
   const [restInsight, setRestInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
@@ -1593,6 +1596,7 @@ function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits }) {
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const ha = analyzeRest();
+    const rungCtx = buildRungContext ? buildRungContext("rest") : {};
     const context = JSON.stringify({
       habit: restHabit,
       sleep_hours: sleepHours,
@@ -1603,6 +1607,7 @@ function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits }) {
       bedtime: rest.bedtime,
       wake_time: rest.wakeTime,
       habit_met: ha?.met,
+      ...rungCtx,
     });
     const insight = await fetchAIInsight("rest_insight", context);
     setRestInsight(insight || "Quality sleep is the foundation of everything. Protect it tonight.");
@@ -1779,7 +1784,7 @@ const MOODS = [
   { emoji:"🌟", label:"Great",    color:"#8B5CF6" },
 ];
 
-function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits }) {
+function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits, buildRungContext }) {
   const [view, setView] = useState("dashboard");
   const [calmInsight, setCalmInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
@@ -1834,6 +1839,7 @@ function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits }) {
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const ha = analyzeCalm();
+    const rungCtx = buildRungContext ? buildRungContext("calm") : {};
     const context = JSON.stringify({
       habit: calmHabit,
       stress_level: stressLevel,
@@ -1841,6 +1847,7 @@ function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits }) {
       activities_done: doneFull,
       gratitude_count: gratitude.length,
       habit_met: ha?.met,
+      ...rungCtx,
     });
     const insight = await fetchAIInsight("calm_insight", context);
     setCalmInsight(insight || "Calm is not the absence of stress — it is the ability to respond to it with intention.");
@@ -2027,7 +2034,7 @@ const KINDNESS_ACTS = [
   { id:"apologized",  emoji:"🕊️", label:"Apologised or resolved something" },
 ];
 
-function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits }) {
+function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits, buildRungContext }) {
   const [view, setView] = useState("dashboard");
   const [connectInsight, setConnectInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
@@ -2068,6 +2075,7 @@ function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits 
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const ha = analyzeConnect();
+    const rungCtx = buildRungContext ? buildRungContext("connect") : {};
     const context = JSON.stringify({
       habit: connectHabit,
       connections_today: todayConns.length,
@@ -2077,6 +2085,7 @@ function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits 
       social_battery: socialBattery,
       relationships_tracked: relationships.length,
       habit_met: ha?.met,
+      ...rungCtx,
     });
     const insight = await fetchAIInsight("connect_insight", context);
     setConnectInsight(insight || "Every genuine connection you make today is an investment in your health — as powerful as any exercise.");
@@ -2373,7 +2382,7 @@ const FOCUS_RITUALS = [
   { id:"intention",    emoji:"🎯", label:"Set clear intention for session" },
 ];
 
-function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
+function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits, buildRungContext }) {
   const [view, setView] = useState("dashboard");
   const [focusInsight, setFocusInsight] = useState("");
   const [insightLoading, setInsightLoading] = useState(false);
@@ -2461,6 +2470,7 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
     if (!fetchAIInsight) return;
     setInsightLoading(true);
     const ha = analyzeForHabit();
+    const rungCtx = buildRungContext ? buildRungContext("focus") : {};
     const ctx = JSON.stringify({
       habit: focusHabit,
       mit: focus.mit,
@@ -2472,6 +2482,7 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits }) {
       energy_level: energyLevel,
       productivity_score: score,
       habit_met: ha?.met,
+      ...rungCtx,
     });
     const insight = await fetchAIInsight("focus_insight", ctx);
     setFocusInsight(insight||"Deep work is rare and valuable. Every protected minute compounds into something extraordinary.");
@@ -3827,6 +3838,31 @@ export default function App() {
     });
   };
 
+  // Build rung context for AI coaches
+  const buildRungContext = (pid) => {
+    const ladder = st.ladder?.[pid] || {};
+    const habits = ladder.habits || [];
+    const rungNum = ladder.rung || 0;
+    const rungNames = [
+      "Rung 1 — Foundation",
+      "Rung 2 — Awareness & Mindfulness",
+      "Rung 3 — Quality",
+      "Rung 4 — Planning & Systems",
+      "Rung 5 — Mastery",
+    ];
+    const mastered = habits.filter(h=>h.mastered);
+    const building = habits.filter(h=>!h.mastered);
+    return {
+      rung_num: rungNum,
+      rung_name: rungNames[rungNum] || "Rung 1 — Foundation",
+      mastered_count: mastered.length,
+      active_habits: habits.map(h=>`"${h.habit}" (${h.checkins||0}/5 check-ins${h.mastered?" ✅":""})`).join(", "),
+      mastered_habits: mastered.map(h=>`"${h.habit}"`).join(", ") || "none yet",
+      building_habits: building.map(h=>`"${h.habit}" — ${h.checkins||0}/5`).join(", ") || "none",
+      rung_complete: mastered.length >= 3,
+    };
+  };
+
   const fetchWeeklyReport = async () => {
     const id = localStorage.getItem("coresix_device_id");
     if (!id) return null;
@@ -5160,7 +5196,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <FocusLayer st={st} update={update} S={S} focusHabit={st.ladder?.focus?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+            <FocusLayer st={st} update={update} S={S} focusHabit={st.ladder?.focus?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")} buildRungContext={buildRungContext}/>
           </div>
         )}
 
@@ -5171,7 +5207,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <ConnectLayer st={st} update={update} S={S} connectHabit={st.ladder?.connect?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+            <ConnectLayer st={st} update={update} S={S} connectHabit={st.ladder?.connect?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")} buildRungContext={buildRungContext}/>
           </div>
         )}
 
@@ -5182,7 +5218,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <CalmLayer st={st} update={update} S={S} calmHabit={st.ladder?.calm?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+            <CalmLayer st={st} update={update} S={S} calmHabit={st.ladder?.calm?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")} buildRungContext={buildRungContext}/>
           </div>
         )}
 
@@ -5193,7 +5229,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <RestLayer st={st} update={update} S={S} restHabit={st.ladder?.rest?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+            <RestLayer st={st} update={update} S={S} restHabit={st.ladder?.rest?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")} buildRungContext={buildRungContext}/>
           </div>
         )}
 
@@ -5204,7 +5240,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <MoveLayer st={st} update={update} S={S} moveHabit={st.ladder?.move?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")}/>
+            <MoveLayer st={st} update={update} S={S} moveHabit={st.ladder?.move?.selected} fetchAIInsight={fetchAIInsight} goToHabits={()=>goTo("habits")} buildRungContext={buildRungContext}/>
           </div>
         )}
 
@@ -5215,7 +5251,7 @@ export default function App() {
               <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#666",padding:"4px"}}>←</button>
               <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa"}}>Back to habits</span>
             </div>
-            <FuelLayer st={st} update={update} S={S} onMealAdded={(msg)=>showToast(msg)} goToHabits={()=>goTo("habits")} fuelHabit={st.ladder?.fuel?.selected} fetchAIInsight={fetchAIInsight}/>
+            <FuelLayer st={st} update={update} S={S} onMealAdded={(msg)=>showToast(msg)} goToHabits={()=>goTo("habits")} fuelHabit={st.ladder?.fuel?.selected} fetchAIInsight={fetchAIInsight} buildRungContext={buildRungContext}/>
           </div>
         )}
 
