@@ -5018,71 +5018,75 @@ export default function App() {
                           {(()=>{
                             const habits = ladder.habits||[];
                             const masteredCount = habits.filter(h=>h.mastered).length;
-                            const lastHabit = habits[habits.length-1];
-                            const canAdd = habits.length>0 && habits.length<3 && lastHabit && (lastHabit.checkins||0)>=5;
+                            const activeHabit = habits.find(h=>h.habit===selected)||{habit:selected,checkins:ladder.days||0,mastered:(ladder.days||0)>=5};
+                            const checkins = activeHabit.checkins||0;
+                            const isMastered = checkins>=5;
+                            const canPickNext = isMastered && masteredCount<3;
                             const canUnlock = masteredCount>=3 && ladder.rung<4;
                             return (
                               <>
-                                {habits.map((h,i)=>(
-                                  <div key={i} style={{padding:"10px 12px",borderRadius:12,background:h.mastered?p.light:"#f8f8f8",border:`1px solid ${h.mastered?p.border:"#eee"}`}}>
-                                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:h.mastered?0:6}}>
-                                      <span style={{fontSize:13}}>{h.mastered?"✅":"🎯"}</span>
-                                      <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:h.mastered?p.color:"#444",fontWeight:h.mastered?600:400,flex:1,lineHeight:1.4}}>{h.habit}</span>
-                                    </div>
-                                    {!h.mastered&&(
-                                      <div style={{display:"flex",alignItems:"center",gap:4,marginLeft:21,marginTop:4}}>
-                                        {Array.from({length:5},(_,j)=>(
-                                          <div key={j} style={{width:10,height:10,borderRadius:"50%",background:j<(h.checkins||0)?p.color:"#e0e0e0"}}/>
-                                        ))}
-                                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginLeft:4}}>{h.checkins||0}/5 to master</span>
-                                      </div>
-                                    )}
+                                {/* Previously mastered habits */}
+                                {habits.filter(h=>h.mastered&&h.habit!==selected).map((h,i)=>(
+                                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,background:p.light,border:`1px solid ${p.border}`}}>
+                                    <span>✅</span>
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600,flex:1,lineHeight:1.4}}>{h.habit}</span>
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:p.color,opacity:0.6}}>mastered</span>
                                   </div>
                                 ))}
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0"}}>
-                                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{masteredCount}/3 mastered · Rung {ladder.rung+1}/5</span>
+
+                                {/* Current active habit */}
+                                <div style={{padding:"12px 14px",borderRadius:14,background:isMastered?p.light:"#f8f8f8",border:`1.5px solid ${isMastered?p.color:"#eee"}`}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                                    <span style={{fontSize:16}}>{isMastered?"✅":"🎯"}</span>
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:isMastered?p.color:"#333",fontWeight:600,flex:1,lineHeight:1.4,textDecoration:isDone?"line-through":"none"}}>{selected}</span>
+                                  </div>
+                                  <div style={{display:"flex",alignItems:"center",gap:5,marginLeft:24}}>
+                                    {Array.from({length:5},(_,j)=>(
+                                      <div key={j} style={{width:12,height:12,borderRadius:"50%",background:j<Math.min(checkins,5)?p.color:"#e0e0e0",transition:"all 0.3s",transform:j===(Math.min(checkins,5)-1)?"scale(1.2)":"scale(1)"}}/>
+                                    ))}
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:isMastered?p.color:"#aaa",marginLeft:6,fontWeight:isMastered?600:400}}>
+                                      {isMastered ? `✨ Mastered! (${checkins} check-ins)` : `${checkins}/5 to master`}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Progress */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{masteredCount}/3 habits mastered · Rung {ladder.rung+1}/5</span>
                                   {canUnlock&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:700}}>🔓 Ready!</span>}
                                 </div>
+
+                                {/* Check in */}
                                 {!isDone&&(
-                                  <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>✓ Done — I did this!</button>
+                                  <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>
+                                    ✓ Done — I did this today!
+                                  </button>
                                 )}
-                                <div style={{display:"flex",gap:8}}>
-                                  {canAdd&&(
-                                    <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={{flex:2,padding:"10px",borderRadius:12,border:`1.5px solid ${p.color}`,background:p.light,color:p.color,fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                                      + Add habit ({habits.length}/3)
-                                    </button>
-                                  )}
-                                  {ladder.rung<4&&(
-                                    <button className="tap" onClick={()=>handleUnlock(pid)} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${canUnlock?p.color:"#e8e8e8"}`,background:canUnlock?p.light:"white",color:canUnlock?p.color:"#bbb",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                      {canUnlock?"🔓 Level up!":  `🔒 ${3-masteredCount} more`}
-                                    </button>
-                                  )}
-                                </div>
+
+                                {/* After mastery choice */}
+                                {isMastered&&canPickNext&&(
+                                  <div style={{background:"#FFFBEB",borderRadius:14,padding:"14px",border:"1.5px solid #FDE68A"}}>
+                                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#92400E",marginBottom:10,lineHeight:1.5,fontWeight:600}}>🎉 Habit mastered! What next?</p>
+                                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                      <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={{padding:"11px",borderRadius:12,border:`1.5px solid ${p.color}`,background:p.light,color:p.color,fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                                        + Pick next Rung {ladder.rung+1} habit ({masteredCount+1}/3)
+                                      </button>
+                                      <button className="tap" onClick={()=>showToast("Keep going — every extra check-in makes it stronger! 💪","#10B981")} style={{padding:"11px",borderRadius:12,border:"1.5px solid #e8e8e8",background:"white",color:"#555",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                                        Keep going with this habit
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Level up */}
+                                {ladder.rung<4&&!canPickNext&&(
+                                  <button className="tap" onClick={()=>handleUnlock(pid)} style={{padding:"11px",borderRadius:12,border:`1.5px solid ${canUnlock?p.color:"#e8e8e8"}`,background:canUnlock?p.light:"white",color:canUnlock?p.color:"#bbb",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                                    {canUnlock?`🔓 Level up to Rung ${ladder.rung+2}!`:`🔒 ${3-masteredCount} more habit${3-masteredCount!==1?"s":""} to level up`}
+                                  </button>
+                                )}
                               </>
                             );
                           })()}
-                          {!isDone&&(
-                            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                              <button className="tap" onClick={()=>handleCheckIn(pid)} style={S.btn(p.grad,`0 6px 18px ${p.color}44`)}>✓ Done — I did this!</button>
-                              <div style={{display:"flex",gap:8}}>
-                                <button className="tap" onClick={()=>goTo(`pick_${pid}`)} style={{...S.btnGhost,flex:1,fontSize:12,padding:"10px"}}>Change</button>
-                                {ladder.rung<4&&(()=>{
-                                  const ready = canLevelUp(st.ladder, pid);
-                                  const daysLeft = daysToLevelUp(st.ladder, pid);
-                                  return (
-                                    <button className="tap" onClick={()=>ready&&handleUnlock(pid)}
-                                      style={{...S.btnGhost,flex:1,fontSize:11,padding:"10px",
-                                        border:`1.5px solid ${ready?"#8B5CF6":"#e8e8e8"}`,
-                                        color:ready?"#8B5CF6":"#bbb",
-                                        background:ready?"#F5F3FF":"white",
-                                        cursor:ready?"pointer":"default"}}>
-                                      {ready ? "🔓 Level up!" : `🔒 ${daysLeft}d left`}
-                                    </button>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          )}
                           {pid==="fuel"&&(
                             <button className="tap" onClick={()=>goTo("fuel_layer")}
                               style={{width:"100%",marginTop:8,padding:"10px",borderRadius:12,border:"1.5px solid #FDE68A",background:"#FFFBEB",color:"#F59E0B",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>
