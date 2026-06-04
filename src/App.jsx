@@ -4473,84 +4473,204 @@ export default function App() {
         </div>
       )}
 
-      {/* ── WEEKLY PILLAR REASSESSMENT OVERLAY ── */}
-        const q = WEEKLY_REASSESSMENT[step];
-        const totalSteps = WEEKLY_REASSESSMENT.length;
+      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
+      {pillarSuggestion && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+
+            {/* Header */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
+            </div>
+
+            {/* Suggested pillars */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {pillarSuggestion.pillars.map((pid,i)=>{
+                const p = PILLARS[pid];
+                const reason = pillarSuggestion.reasons[pid];
+                return (
+                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
+                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
+                    </div>
+                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* All pillars — let user swap */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
+                  const p = PILLARS[pid];
+                  return (
+                    <button key={pid} onClick={()=>{
+                      // Swap this pillar with the lowest priority suggested one
+                      const newPillars = [...pillarSuggestion.pillars];
+                      newPillars[2] = pid; // Replace last suggested
+                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
+                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Confirm */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>{
+                update({selectedPillars: pillarSuggestion.pillars});
+                setPillarSuggestion(null);
+                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
+              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
+                ✅ Confirm These 3 Pillars for Next Week →
+              </button>
+              <button onClick={()=>{
+                setPillarSuggestion(null);
+                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
+              }} style={{...S.btnGhost,fontSize:13}}>
+                Keep current pillars
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MINI ASSESSMENT OVERLAY ── */}
+      {miniAssessment && (()=>{
+        const { pid, step, answers, rung } = miniAssessment;
+        const p = PILLARS[pid];
+        const assessment = MINI_ASSESSMENTS[pid];
+        const q = assessment?.questions[step];
+        const totalSteps = assessment?.questions.length || 2;
         const isLast = step === totalSteps - 1;
-        const p = PILLARS[q.pid];
-        const progressPct = Math.round((step / totalSteps) * 100);
 
         return (
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
-            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"90vh",overflowY:"auto"}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
 
               {/* Header */}
-              <div style={{marginBottom:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase"}}>Week {weekNum} Check-in · {step+1}/{totalSteps}</div>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{progressPct}%</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                <div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Progress Check · {step+1} of {totalSteps}</div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:20,color:"#0f0f0f"}}>{assessment?.title}</div>
                 </div>
-                {/* Progress bar */}
-                <div style={{height:4,background:"#f0f0f0",borderRadius:4,marginBottom:16}}>
-                  <div style={{height:4,background:"linear-gradient(90deg,#10B981,#0EA5E9)",borderRadius:4,width:`${progressPct}%`,transition:"width 0.4s ease"}}/>
-                </div>
-                {step === 0 && (
-                  <div style={{background:"linear-gradient(135deg,#ECFDF5,#EFF6FF)",borderRadius:16,padding:"14px 16px",border:"1px solid #A7F3D0",marginBottom:16}}>
-                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f",marginBottom:6}}>Week {weekNum} complete! 🎉</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.6}}>Let's see how each area of your life feels right now. Your answers will shape which 3 pillars CoreSix recommends for next week.</p>
-                  </div>
-                )}
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-                  <div style={{width:40,height:40,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{q.emoji}</div>
-                  <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:18,color:"#0f0f0f",lineHeight:1.3}}>{q.question}</div>
+                <div style={{display:"flex",gap:6}}>
+                  {Array.from({length:totalSteps},(_,i)=>(
+                    <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=step?p.color:"#e5e5e5",transition:"all 0.3s"}}/>
+                  ))}
                 </div>
               </div>
 
+              {/* Intro on first step */}
+              {step===0 && (
+                <div style={{background:p.light,borderRadius:14,padding:"12px 14px",border:`1px solid ${p.border}`,marginBottom:16}}>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.6}}>{assessment?.intro}</p>
+                </div>
+              )}
+
+              {/* Question */}
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:15,color:"#0f0f0f",lineHeight:1.5,marginBottom:16,fontWeight:500}}>{q?.q}</p>
+
               {/* Options */}
               <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-                {q.options.map((opt,i)=>(
-                  <button key={i} className="tap" onClick={()=>{
-                    const newAnswers = {...answers, [q.pid]: opt.score};
+                {q?.options.map((opt,i)=>(
+                  <button key={i} onClick={()=>{
+                    const newAnswers = [...answers, opt.s];
                     if (isLast) {
-                      // All questions answered — update scores and show suggestion
-                      const newScores = {...st.scores};
-                      Object.entries(newAnswers).forEach(([pid, score]) => {
-                        newScores[pid] = score;
-                      });
-                      update({scores: newScores});
-                      setWeeklyReassessment(null);
-                      // Now show pillar suggestion based on new scores
-                      setTimeout(()=>{
-                        const suggestion = suggestNextWeekPillars(newAnswers, st.history||[]);
-                        setPillarSuggestion(suggestion);
-                      }, 400);
+                      completeMiniAssessment(pid, newAnswers, rung);
                     } else {
+                      setMiniAssessment({pid, step:step+1, answers:newAnswers, rung});
                     }
-                  }} style={{
-                    padding:"14px 16px",borderRadius:14,
-                    border:"1.5px solid #f0f0f0",
-                    background:"white",cursor:"pointer",
-                    textAlign:"left",
-                    fontFamily:"Plus Jakarta Sans,sans-serif",
-                    fontSize:14,color:"#333",lineHeight:1.5,
-                    display:"flex",alignItems:"center",gap:12,
-                    transition:"all 0.15s"
-                  }}>
-                    <div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${p.color}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <div style={{width:10,height:10,borderRadius:"50%",background:"transparent"}}/>
-                    </div>
-                    <div style={{flex:1}}>{opt.text}</div>
+                  }} style={{padding:"14px 16px",borderRadius:14,border:`1.5px solid #f0f0f0`,background:"white",cursor:"pointer",textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#333",lineHeight:1.5,transition:"all 0.2s",display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid #ddd",flexShrink:0}}/>
+                    {opt.t}
                   </button>
                 ))}
               </div>
 
-              <button onClick={()=>setWeeklyReassessment(null)} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
-                Skip for now
+              <button onClick={()=>setMiniAssessment(null)} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Not ready yet
               </button>
             </div>
           </div>
         );
       })()}
+
+      {/* ── CHANGE PILLARS OVERLAY ── */}
+      {showChangePillars && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)"}} onClick={e=>{if(e.target===e.currentTarget)setShowChangePillars(false)}}>
+          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <h3 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f"}}>Change Today's Pillars</h3>
+              <button onClick={()=>setShowChangePillars(false)} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:"#aaa"}}>✕</button>
+            </div>
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginBottom:20,lineHeight:1.5}}>Pick exactly 3 pillars to focus on today. CoreSix recommends your 3 weakest — but you know your day best.</p>
+
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+              {PIDS.map(pid=>{
+                const p=PILLARS[pid];
+                const ladder=st.ladder[pid];
+                const isSelected=(st.selectedPillars||getWeakest3()).includes(pid);
+                const isWeakest=getWeakest3().includes(pid);
+                const current=st.selectedPillars||getWeakest3();
+                return (
+                  <button key={pid} className="tap" onClick={()=>{
+                    let next;
+                    if (isSelected) {
+                      if (current.length<=1) return; // must keep at least 1
+                      next = current.filter(p=>p!==pid);
+                    } else {
+                      if (current.length>=3) {
+                        next = [...current.slice(1),pid]; // replace oldest
+                      } else {
+                        next = [...current,pid];
+                      }
+                    }
+                    update({selectedPillars:next});
+                  }} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${isSelected?p.color:"#f0f0f0"}`,background:isSelected?p.light:"white",cursor:"pointer",transition:"all 0.2s",textAlign:"left"}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:isSelected?p.grad:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,transition:"all 0.2s"}}>{p.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:isSelected?p.color:"#0f0f0f"}}>{p.name}</span>
+                        {isWeakest&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>Recommended</span>}
+                      </div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginTop:2}}>Rung {ladder.rung+1}/5 · {ladder.days} days on this habit</div>
+                    </div>
+                    <div style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${isSelected?p.color:"#ddd"}`,background:isSelected?p.color:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.2s"}}>
+                      {isSelected&&<div style={{width:8,height:8,borderRadius:"50%",background:"white"}}/>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{display:"flex",gap:10}}>
+              <button className="tap" onClick={()=>{update({selectedPillars:null});setShowChangePillars(false);}} style={{flex:1,padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"white",color:"#666",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Reset to recommended
+              </button>
+              <button className="tap" onClick={()=>setShowChangePillars(false)} style={{flex:2,padding:"13px",borderRadius:14,border:"none",background:"#0f0f0f",color:"white",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                Confirm →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
       {pillarSuggestion && (
