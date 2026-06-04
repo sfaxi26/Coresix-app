@@ -3646,6 +3646,7 @@ export default function App() {
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
   const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
+
   const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
   const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
@@ -3806,7 +3807,7 @@ export default function App() {
       setTimeout(()=>{
         const suggestion = suggestNextWeekPillars(st.weeklyImpact||{}, st.history||[]);
         setPillarSuggestion(suggestion);
-      }, 1200);
+      }, 800);
     }
   },[]);
 
@@ -4280,9 +4281,9 @@ export default function App() {
 
             {/* Header */}
             <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Next Week</div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>CoreSix suggests these 3 pillars</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Based on this week's ratings and your patterns. You can confirm or choose your own.</p>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
             </div>
 
             {/* Suggested pillars */}
@@ -4472,6 +4473,85 @@ export default function App() {
         </div>
       )}
 
+      {/* ── WEEKLY PILLAR REASSESSMENT OVERLAY ── */}
+        const q = WEEKLY_REASSESSMENT[step];
+        const totalSteps = WEEKLY_REASSESSMENT.length;
+        const isLast = step === totalSteps - 1;
+        const p = PILLARS[q.pid];
+        const progressPct = Math.round((step / totalSteps) * 100);
+
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"90vh",overflowY:"auto"}}>
+
+              {/* Header */}
+              <div style={{marginBottom:20}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase"}}>Week {weekNum} Check-in · {step+1}/{totalSteps}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{progressPct}%</div>
+                </div>
+                {/* Progress bar */}
+                <div style={{height:4,background:"#f0f0f0",borderRadius:4,marginBottom:16}}>
+                  <div style={{height:4,background:"linear-gradient(90deg,#10B981,#0EA5E9)",borderRadius:4,width:`${progressPct}%`,transition:"width 0.4s ease"}}/>
+                </div>
+                {step === 0 && (
+                  <div style={{background:"linear-gradient(135deg,#ECFDF5,#EFF6FF)",borderRadius:16,padding:"14px 16px",border:"1px solid #A7F3D0",marginBottom:16}}>
+                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:18,color:"#0f0f0f",marginBottom:6}}>Week {weekNum} complete! 🎉</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#444",lineHeight:1.6}}>Let's see how each area of your life feels right now. Your answers will shape which 3 pillars CoreSix recommends for next week.</p>
+                  </div>
+                )}
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                  <div style={{width:40,height:40,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{q.emoji}</div>
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:18,color:"#0f0f0f",lineHeight:1.3}}>{q.question}</div>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+                {q.options.map((opt,i)=>(
+                  <button key={i} className="tap" onClick={()=>{
+                    const newAnswers = {...answers, [q.pid]: opt.score};
+                    if (isLast) {
+                      // All questions answered — update scores and show suggestion
+                      const newScores = {...st.scores};
+                      Object.entries(newAnswers).forEach(([pid, score]) => {
+                        newScores[pid] = score;
+                      });
+                      update({scores: newScores});
+                      setWeeklyReassessment(null);
+                      // Now show pillar suggestion based on new scores
+                      setTimeout(()=>{
+                        const suggestion = suggestNextWeekPillars(newAnswers, st.history||[]);
+                        setPillarSuggestion(suggestion);
+                      }, 400);
+                    } else {
+                    }
+                  }} style={{
+                    padding:"14px 16px",borderRadius:14,
+                    border:"1.5px solid #f0f0f0",
+                    background:"white",cursor:"pointer",
+                    textAlign:"left",
+                    fontFamily:"Plus Jakarta Sans,sans-serif",
+                    fontSize:14,color:"#333",lineHeight:1.5,
+                    display:"flex",alignItems:"center",gap:12,
+                    transition:"all 0.15s"
+                  }}>
+                    <div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${p.color}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <div style={{width:10,height:10,borderRadius:"50%",background:"transparent"}}/>
+                    </div>
+                    <div style={{flex:1}}>{opt.text}</div>
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={()=>setWeeklyReassessment(null)} style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                Skip for now
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
       {pillarSuggestion && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
@@ -4479,9 +4559,9 @@ export default function App() {
 
             {/* Header */}
             <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Next Week</div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>CoreSix suggests these 3 pillars</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>Based on this week's ratings and your patterns. You can confirm or choose your own.</p>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
+              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
             </div>
 
             {/* Suggested pillars */}
@@ -4746,7 +4826,7 @@ export default function App() {
                 if (saved.connect) { saved.connect.connections=[]; saved.connect.socialBattery=0; saved.connect.kindness=[]; }
                 if (saved.focus) { saved.focus.mit=""; saved.focus.pomodoros=0; saved.focus.distractions=[]; saved.focus.tasks=(saved.focus.tasks||[]).map(t=>({...t,done:false})); }
 
-                // 4. Check if new week — flag suggestion to show on reload
+                // 4. Check if new week — show pillar suggestion
                 const newTotalDays = (saved.history||[]).length;
                 const weekNum = Math.floor(newTotalDays / 7);
                 const lastSuggestionWeek = localStorage.getItem("coresix_last_suggestion_week");
