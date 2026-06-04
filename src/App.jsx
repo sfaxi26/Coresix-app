@@ -3027,6 +3027,10 @@ function PillarRipple({ ripple, S }) {
 
 // ── MONTHLY PROGRESS LETTER ───────────────────────────────
 function MonthlyLetter({ st, goBack, S }) {
+  const totalDays = (st.history||[]).length;
+  const daysLeft = Math.max(0, 30 - totalDays);
+  const canGenerate = totalDays >= 30;
+
   const [loading, setLoading] = useState(false);
   const [letter, setLetter] = useState(null);
   const [error, setError] = useState(null);
@@ -3800,9 +3804,9 @@ export default function App() {
     if (localStorage.getItem("coresix_show_suggestion") === "1") {
       localStorage.removeItem("coresix_show_suggestion");
       setTimeout(()=>{
-        const suggestion = suggestNextWeekPillars({}, st.history||[]);
+        const suggestion = suggestNextWeekPillars(st.weeklyImpact||{}, st.history||[]);
         setPillarSuggestion(suggestion);
-      }, 1000);
+      }, 1200);
     }
   },[]);
 
@@ -3920,8 +3924,8 @@ export default function App() {
   };
 
   // ── WEEKLY PILLAR SUGGESTION ENGINE ─────────────────────
-  const suggestNextWeekPillars = (weeklyAnswers, impactHistory) => {
-    const PILLAR_NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"🎯 Focus"};
+  const suggestNextWeekPillars = (weeklyAnswers, history) => {
+    const PILLAR_NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
     const PILLAR_REASONS = {
       fuel:    "Your energy and nutrition need attention",
       move:    "Movement will boost your energy and mood",
@@ -3931,21 +3935,24 @@ export default function App() {
       focus:   "Your focus and clarity need work",
     };
 
-    // Score each pillar — lower = more attention needed
+    const recentHistory = (history||[]).slice(-7);
+
+    // Score each pillar — lower score = higher priority
     const scores = {};
     PIDS.forEach(pid => {
-      let score = st.scores[pid] || 2; // Base from initial assessment
+      let score = st.scores?.[pid] || 2;
 
-      // Adjust by this week's impact rating (0-3)
+      // Adjust by weekly impact rating
       if (weeklyAnswers[pid] !== undefined) {
         score = (score + weeklyAnswers[pid]) / 2;
       }
 
-      // Adjust by recent history — if not worked on recently, boost priority
-      const recentDays = (st.history||[]).slice(-7).filter(h=>h.pillars?.includes(pid)).length;
-      if (recentDays === 0) score -= 0.5; // Not worked on recently = higher priority
+      // Boost priority if not worked on recently
+      const recentDays = recentHistory.filter(h=>h.pillars?.includes(pid)).length;
+      if (recentDays === 0) score -= 0.8;
+      else if (recentDays <= 2) score -= 0.3;
 
-      // Cross-pillar boost — if rest is low, boost focus too
+      // Cross-pillar ripple effect
       const RIPPLE = {rest:["focus","calm"],move:["calm"],calm:["connect","focus"]};
       if (RIPPLE[pid]) {
         RIPPLE[pid].forEach(affected => {
@@ -3958,18 +3965,21 @@ export default function App() {
       scores[pid] = score;
     });
 
-    // Sort by lowest score = most needs attention
+    // Sort lowest score = highest priority
     const sorted = [...PIDS].sort((a,b)=>scores[a]-scores[b]);
     const top3 = sorted.slice(0,3);
 
     // Build reasons
     const reasons = {};
     top3.forEach(pid => {
-      const weekScore = weeklyAnswers[pid];
+      const recentDays = recentHistory.filter(h=>h.pillars?.includes(pid)).length;
+      const weekScore = weeklyAnswers?.[pid];
       if (weekScore !== undefined && weekScore <= 1) {
-        reasons[pid] = `Rated low this week — needs attention`;
-      } else if ((st.history||[]).slice(-7).filter(h=>h.pillars?.includes(pid)).length === 0) {
-        reasons[pid] = `Not worked on recently — time to focus here`;
+        reasons[pid] = "Rated low this week — needs attention";
+      } else if (recentDays === 0) {
+        reasons[pid] = "Not worked on recently — time to focus here";
+      } else if (recentDays <= 2) {
+        reasons[pid] = "Low activity last week — worth prioritising";
       } else {
         reasons[pid] = PILLAR_REASONS[pid];
       }
@@ -4682,6 +4692,20 @@ export default function App() {
                 CoreSix is a wellness app, not a medical tool. Always consult your doctor for medical advice. Built on research by BJ Fogg, James Clear, and behavioural science.
               </div>
 
+              {/* Ownership & Legal */}
+              <div style={{background:"#f8f8f8",borderRadius:14,padding:"14px 16px",border:"1px solid #e8e8e8"}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:11,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>© Intellectual Property</div>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#888",lineHeight:1.7,marginBottom:8}}>
+                  All content, systems and methodologies in CoreSix — including the six-pillar framework, the rung system, the 180 habit descriptions, the cross-pillar intelligence engine, and all coaching content — are proprietary and owned by CoreSix.
+                </p>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#888",lineHeight:1.7,marginBottom:8}}>
+                  Users may not copy, reproduce, distribute or use any CoreSix content, habits, or systems outside of this application without express written permission.
+                </p>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#bbb",lineHeight:1.6}}>
+                  © 2026 CoreSix. All rights reserved.
+                </p>
+              </div>
+
             </div>
           </div>
 
@@ -4724,8 +4748,11 @@ export default function App() {
 
                 // 4. Check if new week — flag suggestion to show on reload
                 const newTotalDays = (saved.history||[]).length;
-                if (newTotalDays > 0 && newTotalDays % 7 === 0) {
+                const weekNum = Math.floor(newTotalDays / 7);
+                const lastSuggestionWeek = localStorage.getItem("coresix_last_suggestion_week");
+                if (newTotalDays >= 7 && String(weekNum) !== lastSuggestionWeek) {
                   localStorage.setItem("coresix_show_suggestion", "1");
+                  localStorage.setItem("coresix_last_suggestion_week", String(weekNum));
                 }
 
                 // 5. Save and reload
@@ -4755,6 +4782,35 @@ export default function App() {
                 showToast("🧠 Full week simulated — check Brain tab!", "#6D28D9");
               }} style={{...S.btnGhost,fontSize:12,padding:"10px"}}>🧠 Simulate Full Week of Data</button>
 
+
+              <button className="tap" onClick={()=>{
+                // Simulate 30 days of history for monthly letter testing
+                const today = new Date();
+                const fakeDays = Array.from({length:30},(_,i)=>{
+                  const d = new Date(today);
+                  d.setDate(d.getDate()-29+i);
+                  return {
+                    date: d.toISOString().slice(0,10),
+                    day: d.toLocaleDateString("en",{weekday:"short",month:"short",day:"numeric"}),
+                    pillars: ["fuel","move","rest"].slice(0, 1 + (i%3)),
+                    streak: i+1,
+                  };
+                });
+                setSt(prev=>({
+                  ...prev,
+                  streak: 30,
+                  history: fakeDays,
+                  weeklyImpact:{fuel:2,move:3,rest:2,calm:1,connect:2,focus:3},
+                  impactHistory:[
+                    {week:"2026-W20",answers:{fuel:2,move:2,rest:1,calm:1,focus:2},date:"May 10",streak:7},
+                    {week:"2026-W21",answers:{move:3,rest:2,calm:2,connect:2},date:"May 17",streak:14},
+                    {week:"2026-W22",answers:{fuel:2,move:3,rest:2,focus:3},date:"May 24",streak:21},
+                    {week:"2026-W23",answers:{fuel:2,move:3,rest:2,calm:1,connect:2,focus:3},date:"May 31",streak:30},
+                  ],
+                }));
+                showToast("📅 30 days simulated — Monthly Letter is now unlocked!", "#0f0f0f");
+              }} style={{...S.btnGhost,fontSize:12,padding:"10px",border:"1.5px solid #0f0f0f",color:"#0f0f0f"}}>📅 Simulate 30 Days → Unlock Monthly Letter</button>
+
               <button className="tap" onClick={()=>{
                 setSt(prev=>({...prev,streak:0,lastDate:null,history:[]}));
                 showToast("Streak reset to 0", "#aaa");
@@ -4773,6 +4829,7 @@ export default function App() {
             <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:52,color:"#0f0f0f",letterSpacing:-2}}>CORE<span style={{color:"#10B981"}}>SIX</span></div>
             <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,letterSpacing:5,color:"#ccc",textTransform:"uppercase"}}>Your Wellness Story</div>
             <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",marginTop:8,textAlign:"center",lineHeight:1.6,maxWidth:260}}>The app that connects the dots between your habits</div>
+            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"rgba(255,255,255,0.25)",marginTop:16,textAlign:"center"}}>© 2026 CoreSix. All rights reserved.</div>
             <div style={{width:36,height:2,background:"linear-gradient(90deg,#10B981,#8B5CF6)",borderRadius:2,marginTop:6,animation:"pulse 2s infinite"}}/>
           </div>
         )}
@@ -5555,10 +5612,23 @@ export default function App() {
                   style={{...S.btn("linear-gradient(135deg,#6D28D9,#8B5CF6)","0 8px 24px #6D28D944"),padding:"16px",fontSize:14}}>
                   📊 Generate Weekly Intelligence Report →
                 </button>
-                <button onClick={()=>goTo("monthly_letter")}
-                  style={{...S.btn("linear-gradient(135deg,#0f0f0f,#2d2d2d)","0 8px 24px #0003"),padding:"14px",fontSize:13}}>
-                  ✉️ Read My Monthly Progress Letter →
-                </button>
+                {(()=>{
+                  const totalDays = (st.history||[]).length;
+                  const daysLeft = Math.max(0, 30 - totalDays);
+                  const canGenerate = totalDays >= 30;
+                  return canGenerate ? (
+                    <button onClick={()=>goTo("monthly_letter")}
+                      style={{...S.btn("linear-gradient(135deg,#0f0f0f,#2d2d2d)","0 8px 24px #0003"),padding:"14px",fontSize:13}}>
+                      ✉️ Read My Monthly Progress Letter →
+                    </button>
+                  ) : (
+                    <div style={{padding:"14px 16px",borderRadius:16,background:"#f8f8f8",border:"1.5px solid #e8e8e8",textAlign:"center"}}>
+                      <div style={{fontSize:22,marginBottom:4}}>✉️</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",fontWeight:600,marginBottom:2}}>Monthly Progress Letter</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Unlocks after 30 days · {totalDays}/30 active · {daysLeft} to go</div>
+                    </div>
+                  );
+                })()}
                 <button onClick={()=>goTo("next_week_plan")}
                   style={{...S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144"),padding:"14px",fontSize:13}}>
                   🎯 Smart Next Week Plan →
