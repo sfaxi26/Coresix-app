@@ -3286,8 +3286,14 @@ function NextWeekPlan({ st, goBack, S }) {
     try {
       const id = localStorage.getItem("coresix_device_id");
       const weekData = {
-        fuel: st.fuel, move: st.move, rest: st.rest,
-        streak: st.streak, weeklyImpact: st.weeklyImpact,
+        fuel: st.fuel||{}, move: st.move||{}, rest: st.rest||{},
+        calm: st.calm||{}, connect: st.connect||{}, focus: st.focus||{},
+        streak: st.streak,
+        weeklyImpact: st.weeklyImpact||{},
+        history: (st.history||[]).slice(-14),
+        selectedPillars: st.selectedPillars,
+        scores: st.scores||{},
+        ladder: st.ladder||{},
       };
       const res = await fetch("https://coresix-backend-production.up.railway.app/api/next-week-plan", {
         method:"POST",
@@ -3799,6 +3805,11 @@ export default function App() {
   };
 
   const [warnings, setWarnings] = useState([]);
+  // Clear any cached warnings if not enough history
+  useEffect(()=>{
+    const history = st.history || [];
+    if (history.length < 7) setWarnings([]);
+  },[st.history?.length]);
 
   // Load predictive warnings on app start
   // Check if suggestion was flagged before reload
@@ -5233,7 +5244,7 @@ export default function App() {
             </div>
 
             {/* Daily quote — shows periodically */}
-            {st.streak % 3 === 0 && st.streak > 0 && (()=>{
+            {st.streak % 3 === 0 && st.streak >= 3 && (()=>{
               const q = getDailyQuote(st.streak);
               return (
                 <div style={{background:"linear-gradient(135deg,#1a1a1a,#0f0f0f)",borderRadius:16,padding:"16px 18px",display:"flex",gap:10,alignItems:"flex-start"}}>
@@ -5246,8 +5257,8 @@ export default function App() {
               );
             })()}
 
-            {/* Predictive Warnings */}
-            {warnings.filter(w=>w.severity!=="positive").slice(0,1).map((w,i)=>(
+            {/* Predictive Warnings — only show after 7+ days */}
+            {st.streak >= 7 && st.history?.length >= 7 && warnings.filter(w=>w.severity!=="positive").slice(0,1).map((w,i)=>(
               <div key={i} style={{background:w.severity==="high"?"linear-gradient(135deg,#FEF2F2,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${w.severity==="high"?"#FECACA":"#FDE68A"}`,display:"flex",gap:10,alignItems:"flex-start"}}>
                 <span style={{fontSize:18,flexShrink:0}}>{w.icon}</span>
                 <div style={{flex:1}}>
