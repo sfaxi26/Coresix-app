@@ -5427,7 +5427,7 @@ export default function App() {
           const allOptions = rungData?.options || [];
           const defaultOptions = allOptions.slice(0,3);
           const moreOptions = allOptions.slice(3);
-          const [showMore, setShowMore] = React.useState(false);
+          const [showMore, setShowMore] = useState(false);
           const visibleOptions = showMore ? allOptions : defaultOptions;
           const masteredHabits = (ladder.habits||[]).filter(h=>h.mastered).map(h=>h.habit);
 
