@@ -752,7 +752,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
       habit_met: habitAnalysis?.met,
     };
     // Build a specific prompt
-    const insight = await fetchAIInsight("fuel_insight", JSON.stringify(context));
+    const insight = await fetchAIInsight("fuel_insight", JSON.stringify(context), rungCtx);
     setFuelInsight(insight || "Keep logging your meals — every entry builds a clearer picture of your nutrition.");
     setInsightLoading(false);
   };
@@ -1291,7 +1291,7 @@ function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits, build
       habit_met: ha?.met,
       ...rungCtx,
     });
-    const insight = await fetchAIInsight("move_insight", context);
+    const insight = await fetchAIInsight("move_insight", context, rungCtx);
     setMoveInsight(insight || "Every step counts. Keep moving — your body notices even when your mind doesn't.");
     setInsightLoading(false);
   };
@@ -1609,7 +1609,7 @@ function RestLayer({ st, update, S, restHabit, fetchAIInsight, goToHabits, build
       habit_met: ha?.met,
       ...rungCtx,
     });
-    const insight = await fetchAIInsight("rest_insight", context);
+    const insight = await fetchAIInsight("rest_insight", context, rungCtx);
     setRestInsight(insight || "Quality sleep is the foundation of everything. Protect it tonight.");
     setInsightLoading(false);
   };
@@ -1849,7 +1849,7 @@ function CalmLayer({ st, update, S, calmHabit, fetchAIInsight, goToHabits, build
       habit_met: ha?.met,
       ...rungCtx,
     });
-    const insight = await fetchAIInsight("calm_insight", context);
+    const insight = await fetchAIInsight("calm_insight", context, rungCtx);
     setCalmInsight(insight || "Calm is not the absence of stress — it is the ability to respond to it with intention.");
     setInsightLoading(false);
   };
@@ -2087,7 +2087,7 @@ function ConnectLayer({ st, update, S, connectHabit, fetchAIInsight, goToHabits,
       habit_met: ha?.met,
       ...rungCtx,
     });
-    const insight = await fetchAIInsight("connect_insight", context);
+    const insight = await fetchAIInsight("connect_insight", context, rungCtx);
     setConnectInsight(insight || "Every genuine connection you make today is an investment in your health — as powerful as any exercise.");
     setInsightLoading(false);
   };
@@ -2484,7 +2484,7 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits, bui
       habit_met: ha?.met,
       ...rungCtx,
     });
-    const insight = await fetchAIInsight("focus_insight", ctx);
+    const insight = await fetchAIInsight("focus_insight", ctx, rungCtx);
     setFocusInsight(insight||"Deep work is rare and valuable. Every protected minute compounds into something extraordinary.");
     setInsightLoading(false);
   };
@@ -3789,11 +3789,11 @@ export default function App() {
     });
   };
 
-  const fetchAIInsight = async (purpose, pillar) => {
+  const fetchAIInsight = async (purpose, pillar, rungContext) => {
     const id = localStorage.getItem("coresix_device_id");
     if (!id) return null;
     const res = await api("POST", "/api/insight", {
-      deviceId: id, purpose, pillar,
+      deviceId: id, purpose, pillar, rungContext,
     });
     return res?.content || null;
   };
@@ -3877,6 +3877,8 @@ export default function App() {
       streak: st.streak,
       activePillars: activePids,
       weeklyImpact: st.weeklyImpact || {},
+      history: (st.history||[]).slice(-7),
+      selectedPillars: st.selectedPillars,
     };
     return await api("POST", "/api/weekly-report", { deviceId: id, weekData });
   };
