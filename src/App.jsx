@@ -4042,9 +4042,19 @@ export default function App() {
           selected: null,
         }])
       );
-      update({qAnswers:newAnswers, scores:newScores, profile:newProfile, ladder:newLadder});
+      // Use setSt directly to ensure ladder is fully replaced not merged
+      setSt(prev => ({
+        ...prev,
+        qAnswers: newAnswers,
+        scores: newScores,
+        profile: newProfile,
+        ladder: newLadder,
+      }));
       // Sync to backend
       syncUser(st.name, newProfile, newScores);
+      // Save to localStorage immediately
+      const currentSaved = JSON.parse(localStorage.getItem(SAVE_KEY)||"{}");
+      localStorage.setItem(SAVE_KEY, JSON.stringify({...currentSaved, scores:newScores, ladder:newLadder}));
       setTimeout(()=>goTo("profile_reveal"),200);
     } else {
       update({qAnswers:newAnswers,scores:newScores,profile:newProfile,qIndex:nextIdx});
@@ -4891,7 +4901,7 @@ export default function App() {
             <div style={S.card}>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",marginBottom:4}}>Your Profile</div>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",marginBottom:14}}>Name: {st.name} · Streak: {st.streak} days</div>
-              <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={S.btn()}>📋 Re-take Assessment</button>
+              <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{},scores:{},ladder:Object.fromEntries(PIDS.map(pid=>[pid,{rung:0,habits:[],days:0,selected:null}]))});goTo("questionnaire");}} style={S.btn()}>📋 Re-take Assessment</button>
             </div>
 
             <div style={{...S.card,border:"1.5px solid #fee2e2"}}>
@@ -5892,7 +5902,7 @@ export default function App() {
                   </div>;
                 })}
                 <div style={{display:"flex",gap:10,marginTop:4}}>
-                  <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{}});goTo("questionnaire");}} style={{...S.btnGhost,flex:2}}>📋 Re-take Assessment</button>
+                  <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{},scores:{},ladder:Object.fromEntries(PIDS.map(pid=>[pid,{rung:0,habits:[],days:0,selected:null}]))});goTo("questionnaire");}} style={{...S.btnGhost,flex:2}}>📋 Re-take Assessment</button>
                   <button className="tap" onClick={resetApp} style={{flex:1,padding:"14px",borderRadius:14,border:"1.5px solid #fee2e2",background:"white",color:"#ef4444",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Reset</button>
                 </div>
               </div>
