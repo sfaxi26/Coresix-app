@@ -3643,6 +3643,7 @@ export default function App() {
   const [visible, setVisible] = useState(true);
   const [confetti, setConfetti] = useState([]);
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:"",reason:""});
+  const [showMoreHabits, setShowMoreHabits] = useState({}); // {pid: true/false}
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
   const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
@@ -5427,7 +5428,8 @@ export default function App() {
           const allOptions = rungData?.options || [];
           const defaultOptions = allOptions.slice(0,3);
           const moreOptions = allOptions.slice(3);
-          const [showMore, setShowMore] = useState(false);
+          const showMore = showMoreHabits[pid] || false;
+          const setShowMore = (val) => setShowMoreHabits(prev=>({...prev,[pid]:val}));
           const visibleOptions = showMore ? allOptions : defaultOptions;
           const masteredHabits = (ladder.habits||[]).filter(h=>h.mastered).map(h=>h.habit);
 
