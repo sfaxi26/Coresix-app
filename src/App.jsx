@@ -2832,9 +2832,12 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:8}}>🔥 {st.streak} day streak</div>
             </div>
 
-            {/* Pillar scores */}
+            {/* Pillar scores — 3-layer breakdown */}
             <div style={S.card}>
               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:14}}>This Week's Pillars</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginBottom:14,lineHeight:1.5}}>
+                Score = Consistency (40%) + Rung Progress (30%) + How it felt (30%)
+              </div>
               {Object.entries(report.scores||{}).map(([pillar,score])=>{
                 const p = PILLAR_CONFIG[pillar];
                 if (!p) return null;
@@ -3450,16 +3453,19 @@ function NextWeekPlan({ st, goBack, S }) {
 
 
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
-function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S }) {
+function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S, impactHistory, ladder, scores }) {
   const [analytics, setAnalytics] = useState(null);
   const [crossPatterns, setCrossPatterns] = useState(null);
   const [nudge, setNudge] = useState(null);
   const [insight, setInsight] = useState("");
   const [loading, setLoading] = useState(false);
   const [insightLoading, setInsightLoading] = useState(false);
+  const [trends, setTrends] = useState(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
 
   useEffect(() => {
     loadAll();
+    loadTrends();
   }, []);
 
   const loadAll = async () => {
@@ -3476,6 +3482,28 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
   };
 
   const loadAnalytics = loadAll;
+
+  const loadTrends = async () => {
+    if (!deviceId || (impactHistory||[]).length < 2) return;
+    setTrendsLoading(true);
+    try {
+      const res = await fetch("https://coresix-backend-production.up.railway.app/api/trends", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          deviceId,
+          impactHistory: (impactHistory||[]).slice(-8),
+          ladder: ladder||{},
+          scores: scores||{},
+        }),
+      });
+      const data = await res.json();
+      if (data) setTrends(data);
+    } catch(e) {}
+    setTrendsLoading(false);
+  };
+
+
 
   const getInsight = async () => {
     setInsightLoading(true);
@@ -3622,6 +3650,59 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
         </div>
       )}
 
+      {/* ── CROSS-PILLAR TRENDS (AI) ── */}
+      {(trendsLoading || trends) && (
+        <div style={S.card}>
+          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>📈 How Your Pillars Connect</div>
+          {trendsLoading ? (
+            <div style={{textAlign:"center",padding:"16px 0",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13}}>🧠 Analysing your patterns...</div>
+          ) : trends?.hasData ? (
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {/* Trend directions */}
+              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                {Object.entries(trends.trends||{}).map(([pid,t])=>{
+                  const EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
+                  const NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
+                  const color = t.direction.includes("rising") ? "#10B981" : t.direction.includes("dropping") ? "#EF4444" : "#888";
+                  return (
+                    <div key={pid} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:20,background:color+"15",border:`1px solid ${color}33`}}>
+                      <span style={{fontSize:12}}>{EMOJIS[pid]}</span>
+                      <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color,fontWeight:600}}>{NAMES[pid]} {t.direction}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Correlated pillars */}
+              {(trends.correlations||[]).length > 0 && (
+                <div style={{padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,#EFF6FF,white)",border:"1px solid #BAE6FD"}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#0EA5E9",marginBottom:6}}>🔗 These pillars move together</div>
+                  {trends.correlations.map((c,i)=>{
+                    const EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
+                    const NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
+                    return (
+                      <div key={i} style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#333",marginBottom:2}}>
+                        {EMOJIS[c.p1]} {NAMES[c.p1]} + {EMOJIS[c.p2]} {NAMES[c.p2]} — connected {c.strength}% of weeks
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {/* AI narrative */}
+              {trends.narrative && (
+                <div style={{padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,#F5F3FF,white)",border:"1px solid #DDD6FE"}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>🧠 What CoreSix sees</div>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#333",lineHeight:1.7}}>{trends.narrative}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.6,fontStyle:"italic"}}>
+              Complete 2+ weekly check-ins to see how your pillars connect and affect each other.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Pillar ripple effect */}
       {crossPatterns?.ripple && (
         <PillarRipple ripple={crossPatterns.ripple} S={S}/>
@@ -3650,11 +3731,12 @@ export default function App() {
   const [confetti, setConfetti] = useState([]);
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:"",reason:""});
   const [showMoreHabits, setShowMoreHabits] = useState({}); // {pid: true/false}
+  const [showAddPillar, setShowAddPillar] = useState(null); // {triggeredBy: 'levelup'|'weeks', pid}
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
   const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
 
-  const [pillarSuggestion, setPillarSuggestion] = useState(null); // {pillars, reasons, scores}
+
   const [exploreArticle, setExploreArticle] = useState(null);
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
@@ -3744,15 +3826,6 @@ export default function App() {
       update({showWeeklyCheckin:true});
     }
 
-    // Auto-suggest new pillars every 7 days (new week starting)
-    const history = JSON.parse(localStorage.getItem(SAVE_KEY)||"{}").history || [];
-    const totalDays = history.length;
-    const suggestionDoneWeek = localStorage.getItem("coresix_suggestion_week");
-    if (totalDays > 0 && totalDays % 7 === 0 && suggestionDoneWeek !== thisWeek) {
-      localStorage.setItem("coresix_suggestion_week", thisWeek);
-      const suggestion = suggestNextWeekPillars({}, history);
-      setTimeout(()=>setPillarSuggestion(suggestion), 800);
-    }
   },[]);
 
 
@@ -3761,6 +3834,21 @@ export default function App() {
   useEffect(()=>{
     if (st.screen==="splash") setTimeout(()=>goTo("welcome"),2200);
   },[]);
+
+  // Check if person has been on same pillars for 4+ weeks
+  useEffect(()=>{
+    if (!st.selectedPillars || st.streak < 28) return;
+    const lastRotation = localStorage.getItem("coresix_last_rotation");
+    const currentWeek = Math.floor(st.streak / 7);
+    const lastRotationWeek = lastRotation ? parseInt(lastRotation) : 0;
+    if (currentWeek - lastRotationWeek >= 4 && (st.selectedPillars||[]).length < 6) {
+      const shown = localStorage.getItem("coresix_rotation_nudge_week");
+      if (shown !== String(currentWeek)) {
+        localStorage.setItem("coresix_rotation_nudge_week", String(currentWeek));
+        setTimeout(()=>setShowAddPillar({triggeredBy:'weeks', pid:null}), 2000);
+      }
+    }
+  },[st.streak]);
 
   const update = patch => setSt(prev=>({...prev,...patch}));
 
@@ -3890,6 +3978,9 @@ export default function App() {
       weeklyImpact: st.weeklyImpact || {},
       history: (st.history||[]).slice(-7),
       selectedPillars: st.selectedPillars,
+      impactHistory: (st.impactHistory||[]).slice(-6),
+      ladder: st.ladder || {},
+      scores: st.scores || {},
     };
     return await api("POST", "/api/weekly-report", { deviceId: id, weekData });
   };
@@ -3931,71 +4022,6 @@ export default function App() {
 
   const showCoaching = (title, message, onContinue, opts={}) => {
     setShowCoach({title, message, onContinue, ...opts});
-  };
-
-  // ── WEEKLY PILLAR SUGGESTION ENGINE ─────────────────────
-  const suggestNextWeekPillars = (weeklyAnswers, history) => {
-    const PILLAR_NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
-    const PILLAR_REASONS = {
-      fuel:    "Your energy and nutrition need attention",
-      move:    "Movement will boost your energy and mood",
-      rest:    "Sleep affects everything — it needs focus",
-      calm:    "Your stress levels need attention",
-      connect: "Connection has been low recently",
-      focus:   "Your focus and clarity need work",
-    };
-
-    const recentHistory = (history||[]).slice(-7);
-
-    // Score each pillar — lower score = higher priority
-    const scores = {};
-    PIDS.forEach(pid => {
-      let score = st.scores?.[pid] || 2;
-
-      // Adjust by weekly impact rating
-      if (weeklyAnswers[pid] !== undefined) {
-        score = (score + weeklyAnswers[pid]) / 2;
-      }
-
-      // Boost priority if not worked on recently
-      const recentDays = recentHistory.filter(h=>h.pillars?.includes(pid)).length;
-      if (recentDays === 0) score -= 0.8;
-      else if (recentDays <= 2) score -= 0.3;
-
-      // Cross-pillar ripple effect
-      const RIPPLE = {rest:["focus","calm"],move:["calm"],calm:["connect","focus"]};
-      if (RIPPLE[pid]) {
-        RIPPLE[pid].forEach(affected => {
-          if (weeklyAnswers[affected] !== undefined && weeklyAnswers[affected] <= 1) {
-            score -= 0.3;
-          }
-        });
-      }
-
-      scores[pid] = score;
-    });
-
-    // Sort lowest score = highest priority
-    const sorted = [...PIDS].sort((a,b)=>scores[a]-scores[b]);
-    const top3 = sorted.slice(0,3);
-
-    // Build reasons
-    const reasons = {};
-    top3.forEach(pid => {
-      const recentDays = recentHistory.filter(h=>h.pillars?.includes(pid)).length;
-      const weekScore = weeklyAnswers?.[pid];
-      if (weekScore !== undefined && weekScore <= 1) {
-        reasons[pid] = "Rated low this week — needs attention";
-      } else if (recentDays === 0) {
-        reasons[pid] = "Not worked on recently — time to focus here";
-      } else if (recentDays <= 2) {
-        reasons[pid] = "Low activity last week — worth prioritising";
-      } else {
-        reasons[pid] = PILLAR_REASONS[pid];
-      }
-    });
-
-    return { pillars: top3, reasons, scores };
   };
 
   const getWeakest3 = () => {
@@ -4161,10 +4187,16 @@ export default function App() {
         : "") + unlockMsg,
       ()=>{
         setShowCoach(null);
-        const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],rung:rung+1,days:0,selected:null}};
+        const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],rung:rung+1,days:0,selected:null,habits:[]}};
         const newScores = {...st.scores,[pid]:newScore};
         update({ladder:newLadder, scores:newScores});
-        goTo(`pick_${pid}`);
+        // Offer to add a new pillar if less than 6 active
+        const activePillars = st.selectedPillars || getWeakest3();
+        if (activePillars.length < 6) {
+          setShowAddPillar({triggeredBy:'levelup', pid});
+        } else {
+          goTo(`pick_${pid}`);
+        }
       },
       {
         icon: improved ? "📈" : "🔓",
@@ -4287,9 +4319,7 @@ export default function App() {
                           const newHistory = [...(st.impactHistory||[]),{week,answers:newAnswers,date:new Date().toLocaleDateString("en",{month:"short",day:"numeric"}),streak:st.streak}];
                           update({weeklyImpact:newImpact,impactHistory:newHistory.slice(-12),showWeeklyCheckin:false});
                           syncImpact(week, newAnswers);
-                          // Generate pillar suggestion for next week
-                          const suggestion = suggestNextWeekPillars(newAnswers, newHistory);
-                          setPillarSuggestion(suggestion);
+                          // Pillar suggestion removed — person changes pillars on rung completion
                           setWeeklyStep(0);
                           setWeeklyAnswers({});
                           goTo("weekly_summary");
@@ -4312,83 +4342,99 @@ export default function App() {
         </div>
       )}
 
-      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
-      {pillarSuggestion && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+      
+      
 
-            {/* Header */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
-            </div>
+      {/* ── ADD PILLAR OVERLAY ── */}
+      {showAddPillar && (()=>{
+        const activePillars = st.selectedPillars || getWeakest3();
+        const inactivePillars = PIDS.filter(p => !activePillars.includes(p));
+        const isLevelUp = showAddPillar.triggeredBy === 'levelup';
+        const isWeeks = showAddPillar.triggeredBy === 'weeks';
+        const currentPid = showAddPillar.pid;
 
-            {/* Suggested pillars */}
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-              {pillarSuggestion.pillars.map((pid,i)=>{
-                const p = PILLARS[pid];
-                const reason = pillarSuggestion.reasons[pid];
-                return (
-                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
-                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:380,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"85vh",overflowY:"auto"}}>
+
+              {/* Header */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>
+                  {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
+                </div>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
+                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
+                </div>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
+                  {isLevelUp
+                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
+                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
+                  }
+                </p>
+              </div>
+
+              {/* Current pillars */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Currently working on</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {activePillars.map(pid=>{
+                    const p = PILLARS[pid];
+                    return (
+                      <div key={pid} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:p.light,border:`1px solid ${p.border}`}}>
+                        <span>{p.emoji}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>{p.name}</span>
                       </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
-                    </div>
-                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Inactive pillars to add */}
+              {inactivePillars.length > 0 && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {inactivePillars.map(pid=>{
+                      const p = PILLARS[pid];
+                      const score = st.scores[pid] || 1;
+                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                      return (
+                        <button key={pid} className="tap" onClick={()=>{
+                          const newPillars = [...activePillars, pid];
+                          update({selectedPillars: newPillars});
+                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                          setShowAddPillar(null);
+                          showToast(`✅ ${p.name} added to your week!`, p.color);
+                          if (currentPid) goTo(`pick_${currentPid}`);
+                          else goTo("habits");
+                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
+                          </div>
+                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              )}
 
-            {/* All pillars — let user swap */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
-                  const p = PILLARS[pid];
-                  return (
-                    <button key={pid} onClick={()=>{
-                      // Swap this pillar with the lowest priority suggested one
-                      const newPillars = [...pillarSuggestion.pillars];
-                      newPillars[2] = pid; // Replace last suggested
-                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
-                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
-                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
-                      </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
-                    </button>
-                  );
-                })}
+              {/* Actions */}
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <button className="tap" onClick={()=>{
+                  setShowAddPillar(null);
+                  if (currentPid) goTo(`pick_${currentPid}`);
+                  else goTo("habits");
+                }} style={S.btnGhost}>
+                  {isLevelUp ? `Continue with Rung ${(st.ladder?.[currentPid]?.rung||0)+2} →` : "Keep my current pillars"}
+                </button>
               </div>
             </div>
-
-            {/* Confirm */}
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>{
-                update({selectedPillars: pillarSuggestion.pillars});
-                setPillarSuggestion(null);
-                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
-              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
-                ✅ Confirm These 3 Pillars for Next Week →
-              </button>
-              <button onClick={()=>{
-                setPillarSuggestion(null);
-                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
-              }} style={{...S.btnGhost,fontSize:13}}>
-                Keep current pillars
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── MINI ASSESSMENT OVERLAY ── */}
       {miniAssessment && (()=>{
@@ -4511,83 +4557,99 @@ export default function App() {
         </div>
       )}
 
-      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
-      {pillarSuggestion && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+      
+      
 
-            {/* Header */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
-            </div>
+      {/* ── ADD PILLAR OVERLAY ── */}
+      {showAddPillar && (()=>{
+        const activePillars = st.selectedPillars || getWeakest3();
+        const inactivePillars = PIDS.filter(p => !activePillars.includes(p));
+        const isLevelUp = showAddPillar.triggeredBy === 'levelup';
+        const isWeeks = showAddPillar.triggeredBy === 'weeks';
+        const currentPid = showAddPillar.pid;
 
-            {/* Suggested pillars */}
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-              {pillarSuggestion.pillars.map((pid,i)=>{
-                const p = PILLARS[pid];
-                const reason = pillarSuggestion.reasons[pid];
-                return (
-                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
-                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:380,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"85vh",overflowY:"auto"}}>
+
+              {/* Header */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>
+                  {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
+                </div>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
+                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
+                </div>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
+                  {isLevelUp
+                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
+                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
+                  }
+                </p>
+              </div>
+
+              {/* Current pillars */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Currently working on</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {activePillars.map(pid=>{
+                    const p = PILLARS[pid];
+                    return (
+                      <div key={pid} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:p.light,border:`1px solid ${p.border}`}}>
+                        <span>{p.emoji}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>{p.name}</span>
                       </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
-                    </div>
-                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Inactive pillars to add */}
+              {inactivePillars.length > 0 && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {inactivePillars.map(pid=>{
+                      const p = PILLARS[pid];
+                      const score = st.scores[pid] || 1;
+                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                      return (
+                        <button key={pid} className="tap" onClick={()=>{
+                          const newPillars = [...activePillars, pid];
+                          update({selectedPillars: newPillars});
+                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                          setShowAddPillar(null);
+                          showToast(`✅ ${p.name} added to your week!`, p.color);
+                          if (currentPid) goTo(`pick_${currentPid}`);
+                          else goTo("habits");
+                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
+                          </div>
+                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              )}
 
-            {/* All pillars — let user swap */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
-                  const p = PILLARS[pid];
-                  return (
-                    <button key={pid} onClick={()=>{
-                      // Swap this pillar with the lowest priority suggested one
-                      const newPillars = [...pillarSuggestion.pillars];
-                      newPillars[2] = pid; // Replace last suggested
-                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
-                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
-                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
-                      </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
-                    </button>
-                  );
-                })}
+              {/* Actions */}
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <button className="tap" onClick={()=>{
+                  setShowAddPillar(null);
+                  if (currentPid) goTo(`pick_${currentPid}`);
+                  else goTo("habits");
+                }} style={S.btnGhost}>
+                  {isLevelUp ? `Continue with Rung ${(st.ladder?.[currentPid]?.rung||0)+2} →` : "Keep my current pillars"}
+                </button>
               </div>
             </div>
-
-            {/* Confirm */}
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>{
-                update({selectedPillars: pillarSuggestion.pillars});
-                setPillarSuggestion(null);
-                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
-              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
-                ✅ Confirm These 3 Pillars for Next Week →
-              </button>
-              <button onClick={()=>{
-                setPillarSuggestion(null);
-                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
-              }} style={{...S.btnGhost,fontSize:13}}>
-                Keep current pillars
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── MINI ASSESSMENT OVERLAY ── */}
       {miniAssessment && (()=>{
@@ -4710,83 +4772,99 @@ export default function App() {
         </div>
       )}
 
-      {/* ── WEEKLY PILLAR SUGGESTION OVERLAY ── */}
-      {pillarSuggestion && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:350,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
-          <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"24px 24px 0 0",padding:"28px 22px 40px",maxHeight:"90vh",overflowY:"auto",animation:"slideUp 0.35s cubic-bezier(0.16,1,0.3,1)"}}>
+      
+      
 
-            {/* Header */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week Complete 🎉</div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0f0f0f",letterSpacing:-0.5,marginBottom:6}}>Choose your 3 pillars for next week</div>
-              <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>CoreSix has analysed your scores and suggests these 3 pillars. You can swap any of them.</p>
-            </div>
+      {/* ── ADD PILLAR OVERLAY ── */}
+      {showAddPillar && (()=>{
+        const activePillars = st.selectedPillars || getWeakest3();
+        const inactivePillars = PIDS.filter(p => !activePillars.includes(p));
+        const isLevelUp = showAddPillar.triggeredBy === 'levelup';
+        const isWeeks = showAddPillar.triggeredBy === 'weeks';
+        const currentPid = showAddPillar.pid;
 
-            {/* Suggested pillars */}
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-              {pillarSuggestion.pillars.map((pid,i)=>{
-                const p = PILLARS[pid];
-                const reason = pillarSuggestion.reasons[pid];
-                return (
-                  <div key={pid} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:16,background:p.light,border:`1.5px solid ${p.border}`}}>
-                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
-                    <div style={{flex:1}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</span>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:600,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 6px"}}>#{i+1} priority</span>
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:380,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
+            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"85vh",overflowY:"auto"}}>
+
+              {/* Header */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>
+                  {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
+                </div>
+                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
+                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
+                </div>
+                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
+                  {isLevelUp
+                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
+                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
+                  }
+                </p>
+              </div>
+
+              {/* Current pillars */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Currently working on</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {activePillars.map(pid=>{
+                    const p = PILLARS[pid];
+                    return (
+                      <div key={pid} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:p.light,border:`1px solid ${p.border}`}}>
+                        <span>{p.emoji}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>{p.name}</span>
                       </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",lineHeight:1.4}}>{reason}</div>
-                    </div>
-                    <div style={{fontSize:20,color:p.color}}>✓</div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Inactive pillars to add */}
+              {inactivePillars.length > 0 && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {inactivePillars.map(pid=>{
+                      const p = PILLARS[pid];
+                      const score = st.scores[pid] || 1;
+                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                      return (
+                        <button key={pid} className="tap" onClick={()=>{
+                          const newPillars = [...activePillars, pid];
+                          update({selectedPillars: newPillars});
+                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                          setShowAddPillar(null);
+                          showToast(`✅ ${p.name} added to your week!`, p.color);
+                          if (currentPid) goTo(`pick_${currentPid}`);
+                          else goTo("habits");
+                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
+                          </div>
+                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              )}
 
-            {/* All pillars — let user swap */}
-            <div style={{marginBottom:20}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",fontWeight:600,marginBottom:10}}>OR CHOOSE YOUR OWN:</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {PIDS.filter(pid=>!pillarSuggestion.pillars.includes(pid)).map(pid=>{
-                  const p = PILLARS[pid];
-                  return (
-                    <button key={pid} onClick={()=>{
-                      // Swap this pillar with the lowest priority suggested one
-                      const newPillars = [...pillarSuggestion.pillars];
-                      newPillars[2] = pid; // Replace last suggested
-                      setPillarSuggestion({...pillarSuggestion, pillars:newPillars});
-                    }} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:14,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
-                      <div style={{width:36,height:36,borderRadius:10,background:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
-                      </div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Add →</div>
-                    </button>
-                  );
-                })}
+              {/* Actions */}
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <button className="tap" onClick={()=>{
+                  setShowAddPillar(null);
+                  if (currentPid) goTo(`pick_${currentPid}`);
+                  else goTo("habits");
+                }} style={S.btnGhost}>
+                  {isLevelUp ? `Continue with Rung ${(st.ladder?.[currentPid]?.rung||0)+2} →` : "Keep my current pillars"}
+                </button>
               </div>
             </div>
-
-            {/* Confirm */}
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>{
-                update({selectedPillars: pillarSuggestion.pillars});
-                setPillarSuggestion(null);
-                showToast(`✅ Next week's pillars set: ${pillarSuggestion.pillars.map(p=>PILLARS[p].emoji).join(" ")}`, "#10B981");
-              }} style={S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144")}>
-                ✅ Confirm These 3 Pillars for Next Week →
-              </button>
-              <button onClick={()=>{
-                setPillarSuggestion(null);
-                showToast("Pillars unchanged — you can change them anytime from Home", "#aaa");
-              }} style={{...S.btnGhost,fontSize:13}}>
-                Keep current pillars
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── MINI ASSESSMENT OVERLAY ── */}
       {miniAssessment && (()=>{
@@ -4989,6 +5067,7 @@ export default function App() {
                 if (newTotalDays > 0 && newTotalDays % 7 === 0) {
                   saved.showWeeklyCheckin = true;
                 }
+                // Note: pillar suggestion removed — person changes pillars on rung completion only
 
                 // 5. Save and reload
                 localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
@@ -5818,15 +5897,7 @@ export default function App() {
             })()}
 
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {/* Show pillar suggestion if available */}
-              {pillarSuggestion && (
-                <button className="tap" onClick={()=>{}} style={{...S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144"),position:"relative",overflow:"hidden"}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    <span>🎯 Choose Next Week's Pillars</span>
-                    <span style={{background:"rgba(255,255,255,0.25)",borderRadius:6,padding:"2px 6px",fontSize:11}}>AI suggestion ready</span>
-                  </div>
-                </button>
-              )}
+
               <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
               <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Full Dashboard</button>
             </div>
