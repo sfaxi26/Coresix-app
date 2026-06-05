@@ -390,46 +390,46 @@ const WORKOUT_PRESETS = [
 // ── LADDER ───────────────────────────────────────────────
 const LADDER = {
   fuel: [
-    { title:"Foundation — Hydration", options:["Drink a full glass of water before my first coffee every morning","Drink 8 glasses of water spread throughout the day","Drink a glass of water before every meal","Replace one sugary drink with water every day","Start my day with 500ml of water before anything else","Eat 3 structured meals today — breakfast, lunch and dinner — no skipping"] },
-    { title:"Mindful Eating", options:["Eat breakfast sitting down with no phone or screens","Chew slowly and put my fork down between every bite","Eat 2-3 structured meals today with no snacking between them","Stop eating when I feel 80% full — not stuffed","Sit at a table for every meal today — no desk, no sofa","Take 3 deep breaths before eating my first meal"] },
-    { title:"Protein & Nutrients", options:["Add a source of protein to every meal today","Include one vegetable or salad with lunch and dinner","Eat exactly 3 meals today — protein, vegetables and complex carbs in each","Cook at home for at least one meal today","Eat 2 meals today with a 5-6 hour gap between them","Eat at least 3 different coloured vegetables across my meals today"] },
-    { title:"Meal Planning", options:["Plan my 3 meals for tomorrow — times and what I will eat — before bed","Prep all 3 meals for tomorrow in one 20-minute session tonight","Write a grocery list for a full week of 2-3 meals per day","Batch cook protein and vegetables on the weekend for the week","Set fixed meal times for tomorrow — breakfast, lunch, dinner — and stick to them","Plan exactly 2 meals for tomorrow and eat nothing in between"] },
-    { title:"Nutrition Mastery", options:["Eat whole foods for every meal today — nothing ultra-processed","Eat exactly 2-3 balanced meals today with no eating outside those windows","Track my protein intake across my 2-3 meals and hit my daily target","Follow my meal plan exactly — right foods, right times, right portions","Cook every meal from scratch today — breakfast, lunch and dinner","Eat the rainbow across my meals — 6 different coloured plants today"] },
+    { title:"Foundation", why:"The foundation is not about eating perfectly — it is about structure. Pick one habit small enough to do on your worst day. Water and meal timing are the base everything else sits on. Get this right and everything else becomes easier.", options:["Drink a full glass of water before my first coffee every morning","Eat 3 structured meals today — breakfast, lunch and dinner — no skipping","Drink a glass of water before every meal","Replace one sugary drink with water every day","Start my day with 500ml of water before anything else","Drink 8 glasses of water spread throughout the day"] },
+    { title:"Mindful Eating", why:"How you eat matters as much as what you eat. Slowing down activates your body's natural hunger and fullness signals. One mindful meal a day is enough to start rewiring your relationship with food.", options:["Eat breakfast sitting down with no phone or screens","Chew slowly and put my fork down between every bite","Eat 2-3 structured meals today with no snacking between them","Stop eating when I feel 80% full — not stuffed","Sit at a table for every meal today — no desk, no sofa","Take 3 deep breaths before eating my first meal"] },
+    { title:"Quality Nutrition", why:"Now that structure and awareness are in place, it is time to improve what goes in. Adding protein and vegetables to existing meals is the highest-leverage nutritional change you can make.", options:["Add a source of protein to every meal today","Include one vegetable or salad with lunch and dinner","Eat exactly 3 meals today — protein, vegetables and complex carbs in each","Cook at home for at least one meal today","Eat 2 meals today with a 5-6 hour gap between them","Eat at least 3 different coloured vegetables across my meals today"] },
+    { title:"Planning & Preparation", why:"The biggest predictor of eating well is having the right food available. Planning removes willpower from the equation. You are not relying on motivation — you are relying on a system.", options:["Plan my 3 meals for tomorrow — times and what I will eat — before bed","Prep all 3 meals for tomorrow in one 20-minute session tonight","Write a grocery list for a full week of 2-3 meals per day","Batch cook protein and vegetables on the weekend for the week","Set fixed meal times for tomorrow — breakfast, lunch, dinner — and stick to them","Plan exactly 2 meals for tomorrow and eat nothing in between"] },
+    { title:"Mastery", why:"At this level, nutrition is not a diet — it is an identity. You eat intentionally, you plan consistently, and you fuel your body like a priority. This rung is about making that permanent.", options:["Eat whole foods for every meal today — nothing ultra-processed","Eat exactly 2-3 balanced meals today with no eating outside those windows","Track my protein intake across my 2-3 meals and hit my daily target","Follow my meal plan exactly — right foods, right times, right portions","Cook every meal from scratch today — breakfast, lunch and dinner","Eat the rainbow across my meals — 6 different coloured plants today"] },
   ],
   move: [
-    { title:"Foundation — Just Start", options:["Do 5 push-ups before stepping into the shower","Do 10 jumping jacks the moment my alarm goes off","Walk to the end of the street and back before breakfast","Do 10 calf raises while brushing my teeth","Stretch my arms above my head for 60 seconds after waking","March in place for 2 minutes while my kettle boils"] },
-    { title:"Daily Walk", options:["Take a 10-minute walk outside after lunch every day","Walk to a colleague instead of sending a message","Take the stairs instead of the lift every time today","Park further away and walk the extra distance","Go for a 15-minute walk before or after dinner","Walk while taking phone calls instead of sitting"] },
-    { title:"Bodyweight Training", options:["Complete a 15-minute bodyweight workout 3 times this week","Do 3 sets of push-ups, squats and lunges every morning","Complete a 7-minute HIIT workout before breakfast","Do 20 squats every time I stand up from my desk","Follow a beginner workout video on YouTube 3x this week","Do a 10-minute yoga flow every morning before work"] },
-    { title:"Consistent Training", options:["Hit 7000 steps every day this week — track it","Complete a 30-minute workout 4 times this week","Go to the gym or follow my training plan as scheduled","Cycle, swim or run for 20 minutes 3 times this week","Do a full workout without skipping any exercises","Complete my planned workout even when I don't feel like it"] },
-    { title:"Movement Mastery", options:["Complete my full planned training session — no shortcuts","Hit 10000 steps and 30 minutes of exercise today","Train the muscle group I have been avoiding this week","Do my workout at the same time every day this week","Add one extra set to every exercise in my session today","Complete all planned workouts this week without missing any"] },
+    { title:"Foundation", why:"You do not start with a gym. You start with one small movement anchored to something you already do. The goal here is identity — proving to yourself that you are someone who moves. Every single day, no exceptions.", options:["Do 5 push-ups before stepping into the shower","Walk to the end of the street and back before breakfast","Do 10 jumping jacks the moment my alarm goes off","Do 10 calf raises while brushing my teeth","Stretch my arms above my head for 60 seconds after waking","March in place for 2 minutes while my kettle boils"] },
+    { title:"Daily Walk", why:"Walking is one of the most underrated habits in existence. A 10-minute walk after meals reduces blood sugar spikes by 30%, clears mental fog, and builds the daily movement habit that everything else builds on.", options:["Take a 10-minute walk outside after lunch every day","Go for a 15-minute walk before or after dinner","Take the stairs instead of the lift every time today","Park further away and walk the extra distance","Walk while taking phone calls instead of sitting","Walk to a colleague instead of sending a message"] },
+    { title:"Bodyweight Training", why:"Your body is the only gym you need at this stage. Bodyweight training builds real functional strength, requires no equipment, and can be done anywhere. The habit of structured exercise is what you are building here.", options:["Complete a 15-minute bodyweight workout 3 times this week","Do 3 sets of push-ups, squats and lunges every morning","Complete a 7-minute HIIT workout before breakfast","Do 20 squats every time I stand up from my desk","Follow a beginner workout video on YouTube 3x this week","Do a 10-minute yoga flow every morning before work"] },
+    { title:"Consistent Training", why:"Consistency beats intensity every time. This rung is about showing up on a schedule — not just when you feel motivated. The habit of training on planned days, regardless of how you feel, is what creates lasting fitness.", options:["Hit 7000 steps every day this week — track it","Complete a 30-minute workout 4 times this week","Go to the gym or follow my training plan as scheduled","Cycle, swim or run for 20 minutes 3 times this week","Do a full workout without skipping any exercises","Complete my planned workout even when I don't feel like it"] },
+    { title:"Mastery", why:"At mastery level, movement is not something you do — it is who you are. You train consistently, you push your limits, and you see your body as something worth investing in every single day.", options:["Complete my full planned training session — no shortcuts","Hit 10000 steps and 30 minutes of exercise today","Train the muscle group I have been avoiding this week","Do my workout at the same time every day this week","Add one extra set to every exercise in my session today","Complete all planned workouts this week without missing any"] },
   ],
   rest: [
-    { title:"Foundation — Morning Win", options:["Make my bed within 5 minutes of waking up every day","Sit in silence for 2 minutes before picking up my phone","Drink a glass of water the moment I wake up","Open the curtains and get natural light within 10 minutes of waking","Take 5 slow deep breaths before getting out of bed","Do not check my phone for the first 10 minutes after waking"] },
-    { title:"Screen Boundaries", options:["Put my phone in another room 15 minutes before sleep","Turn off all screens at least 30 minutes before my bedtime","Use my phone on Do Not Disturb mode from 9pm onwards","No social media after 9pm — any app counts","Put my phone charger in the hallway or kitchen overnight","Switch my phone to grayscale mode after 8pm"] },
-    { title:"Sleep Schedule", options:["Go to bed at exactly the same time every night this week","Set a bedtime alarm 30 minutes before I want to sleep","Wake up at the same time every morning — including weekends","Get into bed 20 minutes before my target sleep time","Write tomorrow's top task before I close my eyes","Avoid caffeine after 2pm to protect tonight's sleep"] },
-    { title:"Sleep Environment", options:["Get 10 minutes of natural light within 30 minutes of waking","Keep my bedroom cool and dark — open a window or use blackout curtains","Take a warm shower before bed to lower my body temperature","Use white noise or earplugs if there is noise in my environment","Remove all screens from my bedroom permanently","Spray lavender on my pillow or use a diffuser before sleep"] },
-    { title:"Rest Mastery", options:["Follow my complete wind-down routine every night without exception","Get 7-8 hours of sleep and track it for the whole week","Wake up refreshed — adjust bedtime if I am still tired","Complete my morning and evening routine without any deviation","Review my sleep quality and make one improvement this week","Sleep and wake at the exact same time every day this week"] },
+    { title:"Foundation", why:"The morning is the keystone of the day. How you start the first 10 minutes shapes everything that follows. Pick one habit that anchors your morning before the phone takes over. It is a signal to your brain that you are in control.", options:["Make my bed within 5 minutes of waking up every day","Do not check my phone for the first 10 minutes after waking","Drink a glass of water the moment I wake up","Open the curtains and get natural light within 10 minutes of waking","Sit in silence for 2 minutes before picking up my phone","Take 5 slow deep breaths before getting out of bed"] },
+    { title:"Screen Boundaries", why:"Blue light from screens suppresses melatonin by up to 50%, making it harder to fall asleep and reducing sleep quality. Creating a boundary between screens and sleep is the single highest-leverage sleep improvement available.", options:["Put my phone in another room 15 minutes before sleep","Turn off all screens at least 30 minutes before my bedtime","Use my phone on Do Not Disturb mode from 9pm onwards","No social media after 9pm — any app counts","Put my phone charger in the hallway or kitchen overnight","Switch my phone to grayscale mode after 8pm"] },
+    { title:"Sleep Schedule", why:"Your body runs on a circadian rhythm — an internal clock that regulates sleep, hormones and energy. Going to bed and waking at consistent times is more powerful than any supplement or sleep hack. Consistency is the habit.", options:["Go to bed at exactly the same time every night this week","Wake up at the same time every morning — including weekends","Set a bedtime alarm 30 minutes before I want to sleep","Get into bed 20 minutes before my target sleep time","Avoid caffeine after 2pm to protect tonight's sleep","Write tomorrow's top task before I close my eyes"] },
+    { title:"Sleep Environment", why:"Your bedroom environment directly affects sleep depth and duration. Temperature, light, and sound all signal to your nervous system whether it is safe to rest deeply. Small environmental changes create dramatically better sleep.", options:["Keep my bedroom cool and dark — open a window or use blackout curtains","Get 10 minutes of natural light within 30 minutes of waking","Take a warm shower before bed to lower my body temperature","Use white noise or earplugs if there is noise in my environment","Remove all screens from my bedroom permanently","Spray lavender on my pillow or use a diffuser before sleep"] },
+    { title:"Mastery", why:"At this level, sleep is a non-negotiable performance tool. You have a complete wind-down ritual, a consistent schedule, and you treat sleep with the same seriousness as nutrition and training.", options:["Follow my complete wind-down routine every night without exception","Get 7-8 hours of sleep and track it for the whole week","Wake up refreshed — adjust bedtime if I am still tired","Complete my morning and evening routine without any deviation","Review my sleep quality and make one improvement this week","Sleep and wake at the exact same time every day this week"] },
   ],
   calm: [
-    { title:"Foundation — The Pause", options:["Take 3 slow deep breaths before opening any social media app","Take one slow breath before replying to any stressful message","Pause for 5 seconds before reacting to anything today","Do 4-7-8 breathing when I feel tension — 4 in, 7 hold, 8 out","Step away from my phone for 5 minutes when I feel overwhelmed","Name my emotion out loud when I feel stressed — it reduces it"] },
-    { title:"Gratitude Practice", options:["Write one thing I am grateful for before checking my phone","Write 3 specific things that went well today before bed","Tell one person today what I appreciate about them","Notice one beautiful thing in my environment right now","Write a gratitude note to someone who helped me recently","List 5 things I take for granted that I am actually lucky to have"] },
-    { title:"Mindful Moments", options:["Sit in silence for 5 minutes with my morning drink","Spend 10 minutes outside with no phone or headphones","Do a 5-minute body scan — notice where I hold tension and release it","Eat one meal today in complete silence — no screens, no music","Take a 5-minute break every 90 minutes — just breathe","Do a 10-minute walk with no destination and no phone"] },
-    { title:"Meditation Practice", options:["Do a 10-minute guided meditation every morning before work","Use a meditation app for 10 minutes after waking up","Do a 10-minute breathing exercise before bed every night","Practice loving-kindness meditation for 10 minutes today","Meditate for 10 minutes at the same time every day this week","Do a body scan meditation for 10 minutes before sleep"] },
-    { title:"Calm Mastery", options:["Complete my full mindfulness practice every day this week","Meditate for 20 minutes without guided audio — just breath","Journal every morning and evening for the full week","Maintain a stress journal — note every trigger and my response","Do a weekly emotional review — what patterns did I notice","Spend 30 minutes in complete silence and solitude every day"] },
+    { title:"Foundation", why:"You cannot meditate your way out of a reactive mind in week one. The foundation is simpler than that — it is learning to pause. One breath before you react. That pause is the skill. Everything else builds on it.", options:["Take 3 slow deep breaths before opening any social media app","Take one slow breath before replying to any stressful message","Pause for 5 seconds before reacting to anything today","Do 4-7-8 breathing when I feel tension — 4 in, 7 hold, 8 out","Step away from my phone for 5 minutes when I feel overwhelmed","Name my emotion out loud when I feel stressed — it reduces it"] },
+    { title:"Gratitude Practice", why:"Gratitude is not soft — it is neuroscience. Writing what you are grateful for activates the prefrontal cortex and literally rewires the brain toward positive pattern recognition. Three specific things before bed changes how your brain scans the world.", options:["Write one thing I am grateful for before checking my phone","Write 3 specific things that went well today before bed","Tell one person today what I appreciate about them","Notice one beautiful thing in my environment right now","Write a gratitude note to someone who helped me recently","List 5 things I take for granted that I am actually lucky to have"] },
+    { title:"Mindful Moments", why:"Mindfulness does not require meditation. It requires presence. Choosing one moment each day to be fully here — with your coffee, on a walk, during a meal — is enough to begin building the awareness that changes how you experience everything.", options:["Sit in silence for 5 minutes with my morning drink","Spend 10 minutes outside with no phone or headphones","Do a 5-minute body scan — notice where I hold tension and release it","Eat one meal today in complete silence — no screens, no music","Take a 5-minute break every 90 minutes — just breathe","Do a 10-minute walk with no destination and no phone"] },
+    { title:"Meditation Practice", why:"Ten minutes of daily meditation has been shown to reduce anxiety, improve focus, and thicken the prefrontal cortex over time. This rung is about making meditation a daily non-negotiable — not a thing you do when you feel like it.", options:["Do a 10-minute guided meditation every morning before work","Use a meditation app for 10 minutes after waking up","Do a 10-minute breathing exercise before bed every night","Practice loving-kindness meditation for 10 minutes today","Meditate for 10 minutes at the same time every day this week","Do a body scan meditation for 10 minutes before sleep"] },
+    { title:"Mastery", why:"At mastery level, calm is not something you find — it is something you carry. You have a daily practice, you know your triggers, and you respond to difficulty with awareness rather than reaction.", options:["Complete my full mindfulness practice every day this week","Meditate for 20 minutes without guided audio — just breath","Journal every morning and evening for the full week","Maintain a stress journal — note every trigger and my response","Do a weekly emotional review — what patterns did I notice","Spend 30 minutes in complete silence and solitude every day"] },
   ],
   connect: [
-    { title:"Foundation — Reach Out", options:["Send one genuine message to someone I care about today","Reply to one message I have been putting off","Text someone just to say I was thinking of them","Send a voice note to a friend instead of a text","Wish a colleague a genuine good morning today","Write a 2-line message to someone I have not spoken to in a while"] },
-    { title:"Present Connections", options:["Have one conversation today with my phone face-down","Give one specific genuine compliment to someone today","Ask someone how they really are — and actually listen","Make eye contact and smile at the next person I pass","Thank someone who helped me recently — be specific","Put my phone away during my next meal with another person"] },
-    { title:"Deeper Conversations", options:["Call instead of texting one person today","Ask a meaningful question in my next conversation","Share something real about how I am feeling with someone I trust","Have lunch with a colleague instead of eating alone","Tell someone one thing I appreciate about them","Ask someone to share something good that happened to them"] },
-    { title:"Investing in Relationships", options:["Plan and schedule a catch-up with a friend I have been meaning to see","Write a heartfelt message to someone who shaped who I am","Organise a group activity or dinner with people I care about","Have a 20-minute uninterrupted conversation with someone I love","Reach out to someone I have lost touch with","Do something kind for someone without being asked"] },
-    { title:"Connection Mastery", options:["Plan one meaningful in-person connection every week from now on","Create a connection ritual — weekly call, walk or dinner with someone","Invest one focused hour of undivided attention in a key relationship","Resolve a misunderstanding or conflict I have been avoiding","Build something together with someone — a goal, a project, a habit","Express love or appreciation in a non-verbal way to someone today"] },
+    { title:"Foundation", why:"Connection does not require a conversation. It starts with going first — sending one message, making one gesture. Research shows that people consistently underestimate how much others appreciate being reached out to. You just have to send it.", options:["Send one genuine message to someone I care about today","Reply to one message I have been putting off","Text someone just to say I was thinking of them","Send a voice note to a friend instead of a text","Wish a colleague a genuine good morning today","Write a 2-line message to someone I have not spoken to in a while"] },
+    { title:"Present Connections", why:"Being physically present is not the same as being truly present. Putting your phone away, making real eye contact, and listening fully are the habits that transform surface interactions into meaningful ones.", options:["Have one conversation today with my phone face-down","Give one specific genuine compliment to someone today","Ask someone how they really are — and actually listen","Make eye contact and smile at the next person I pass","Thank someone who helped me recently — be specific","Put my phone away during my next meal with another person"] },
+    { title:"Deeper Conversations", why:"Most conversations stay on the surface. Deeper connection requires one of you to go first — to ask a real question, share something honest, or show genuine interest. This rung is about building that courage into a habit.", options:["Call instead of texting one person today","Ask a meaningful question in my next conversation","Share something real about how I am feeling with someone I trust","Have lunch with a colleague instead of eating alone","Tell someone one thing I appreciate about them","Ask someone to share something good that happened to them"] },
+    { title:"Investing in Relationships", why:"Relationships are like bank accounts — they need regular deposits. This rung is about intentional investment: planning time, writing meaningful messages, and showing up for the people who matter before life gets too busy.", options:["Plan and schedule a catch-up with a friend I have been meaning to see","Write a heartfelt message to someone who shaped who I am","Organise a group activity or dinner with people I care about","Have a 20-minute uninterrupted conversation with someone I love","Reach out to someone I have lost touch with","Do something kind for someone without being asked"] },
+    { title:"Mastery", why:"At mastery level, connection is not reactive — it is intentional and structured. You invest in relationships the same way you invest in your health: consistently, specifically, and with full attention.", options:["Plan one meaningful in-person connection every week from now on","Create a connection ritual — weekly call, walk or dinner with someone","Invest one focused hour of undivided attention in a key relationship","Resolve a misunderstanding or conflict I have been avoiding","Build something together with someone — a goal, a project, a habit","Express love or appreciation in a non-verbal way to someone today"] },
   ],
   focus: [
-    { title:"Foundation — Name Your Priority", options:["Write my single most important task before opening email","Say my top priority out loud before sitting at my desk","Write tomorrow's most important task before closing my laptop tonight","Identify the one thing that if done will make everything else easier","Write my goal for today in one clear sentence before I start","Choose one task to finish completely before starting anything else"] },
-    { title:"Distraction-Free Work", options:["Set a 25-minute timer and work on one thing only","Turn off all notifications for the next 30 minutes","Close all browser tabs except the one I am working on","Put my phone in another room while I work for 30 minutes","Use airplane mode for 25 minutes to do deep work","Work in a distraction-free environment for one full hour"] },
-    { title:"Deep Work Blocks", options:["Complete three Pomodoros — 25 min work, 5 min rest — before lunch","Block 60 minutes of deep work before any meetings today","Batch all my emails into one 20-minute block today","Do my most creative work in the first 2 hours of the day","Complete my three most important tasks before reactive work","Work on my most important project for 45 minutes without stopping"] },
-    { title:"Weekly Planning", options:["Do a weekly review every Sunday — what worked, what did not","Plan next week every Friday before finishing work","Write my top 3 goals for the week every Monday morning","Review my progress toward my monthly goal every week","Block my key tasks in my calendar before the week starts","Delete one low-value task from my list every week"] },
-    { title:"Focus Mastery", options:["Complete a full 90-minute deep work session every day this week","Finish every day with a shutdown ritual — clear, plan, close","Protect my peak energy hours for my most important work every day","Complete all planned deep work sessions without skipping","Review my quarterly goals and align today's work with them","Track how I spend every 30-minute block for one full day"] },
+    { title:"Foundation", why:"Willpower is highest in the morning and depletes with every decision you make. The foundation habit is simple: before you open email, social media, or any app — write the one thing that matters most today. That single act uses your peak willpower for what actually matters.", options:["Write my single most important task before opening email","Write tomorrow's most important task before closing my laptop tonight","Say my top priority out loud before sitting at my desk","Identify the one thing that if done will make everything else easier","Write my goal for today in one clear sentence before I start","Choose one task to finish completely before starting anything else"] },
+    { title:"Distraction-Free Work", why:"The average person checks their phone every 11 minutes and takes 23 minutes to regain full focus after each interruption. This rung is about reclaiming that time — one protected block of work per day, no notifications, no switching.", options:["Set a 25-minute timer and work on one thing only","Put my phone in another room while I work for 30 minutes","Turn off all notifications for the next 30 minutes","Use airplane mode for 25 minutes to do deep work","Close all browser tabs except the one I am working on","Work in a distraction-free environment for one full hour"] },
+    { title:"Deep Work Blocks", why:"Deep work — focused, uninterrupted cognitive effort — is becoming rare and increasingly valuable. Three Pomodoros before lunch produces more meaningful output than a full day of distracted multitasking. This rung builds that capacity.", options:["Complete three Pomodoros — 25 min work, 5 min rest — before lunch","Block 60 minutes of deep work before any meetings today","Do my most creative work in the first 2 hours of the day","Complete my three most important tasks before reactive work","Batch all my emails into one 20-minute block today","Work on my most important project for 45 minutes without stopping"] },
+    { title:"Weekly Planning", why:"Planning is not administration — it is leverage. Every hour spent planning saves four hours of unfocused doing. This rung builds the weekly rhythm of reflection and intention that turns busy into productive.", options:["Do a weekly review every Sunday — what worked, what did not","Plan next week every Friday before finishing work","Write my top 3 goals for the week every Monday morning","Block my key tasks in my calendar before the week starts","Review my progress toward my monthly goal every week","Delete one low-value task from my list every week"] },
+    { title:"Mastery", why:"At mastery level, your focus is a protected resource. You work in deep blocks, you plan at multiple levels, and you know exactly what your most important work is at any given time. Distraction is a choice you rarely make.", options:["Complete a full 90-minute deep work session every day this week","Finish every day with a shutdown ritual — clear, plan, close","Protect my peak energy hours for my most important work every day","Complete all planned deep work sessions without skipping","Review my quarterly goals and align today's work with them","Track how I spend every 30-minute block for one full day"] },
   ],
 };
 
@@ -3642,7 +3642,7 @@ export default function App() {
   const [st, setSt]       = useState(()=>loadState()||initState());
   const [visible, setVisible] = useState(true);
   const [confetti, setConfetti] = useState([]);
-  const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:""});
+  const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:"",reason:""});
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
   const [miniAssessment, setMiniAssessment] = useState(null); // {pid, step, answers}
@@ -3801,15 +3801,7 @@ export default function App() {
 
   // Load predictive warnings on app start
   // Check if suggestion was flagged before reload
-  useEffect(()=>{
-    if (localStorage.getItem("coresix_show_suggestion") === "1") {
-      localStorage.removeItem("coresix_show_suggestion");
-      setTimeout(()=>{
-        const suggestion = suggestNextWeekPillars(st.weeklyImpact||{}, st.history||[]);
-        setPillarSuggestion(suggestion);
-      }, 800);
-    }
-  },[]);
+
 
   useEffect(()=>{
     const loadWarnings = async () => {
@@ -3842,6 +3834,9 @@ export default function App() {
       }
     });
   };
+
+  // Clean habit display — strips [reason: ...] tag for UI display
+  const displayHabit = (habit) => habit ? habit.replace(/\s*\[reason:.*?\]$/i, '').trim() : habit;
 
   // Build rung context for AI coaches
   const buildRungContext = (pid) => {
@@ -4027,7 +4022,26 @@ export default function App() {
     }
 
     if (nextIdx>=QUESTIONNAIRE.length) {
-      update({qAnswers:newAnswers,scores:newScores,profile:newProfile});
+      // Set starting rung based on assessment score
+      // Score 1-2 = Rung 1 (Foundation)
+      // Score 3   = Rung 2 (Awareness — skip Foundation)
+      // Score 4   = Rung 3 (Quality — already has awareness)
+      const startingRungs = Object.fromEntries(
+        PIDS.map(pid => {
+          const score = newScores[pid] || 1;
+          const rung = score >= 4 ? 2 : score >= 3 ? 1 : 0;
+          return [pid, rung];
+        })
+      );
+      const newLadder = Object.fromEntries(
+        PIDS.map(pid => [pid, {
+          rung: startingRungs[pid],
+          habits: [],
+          days: 0,
+          selected: null,
+        }])
+      );
+      update({qAnswers:newAnswers, scores:newScores, profile:newProfile, ladder:newLadder});
       // Sync to backend
       syncUser(st.name, newProfile, newScores);
       setTimeout(()=>goTo("profile_reveal"),200);
@@ -4946,13 +4960,10 @@ export default function App() {
                 if (saved.connect) { saved.connect.connections=[]; saved.connect.socialBattery=0; saved.connect.kindness=[]; }
                 if (saved.focus) { saved.focus.mit=""; saved.focus.pomodoros=0; saved.focus.distractions=[]; saved.focus.tasks=(saved.focus.tasks||[]).map(t=>({...t,done:false})); }
 
-                // 4. Check if new week — show pillar suggestion
+                // 4. After every 7 days — trigger weekly check-in
                 const newTotalDays = (saved.history||[]).length;
-                const weekNum = Math.floor(newTotalDays / 7);
-                const lastSuggestionWeek = localStorage.getItem("coresix_last_suggestion_week");
-                if (newTotalDays >= 7 && String(weekNum) !== lastSuggestionWeek) {
-                  localStorage.setItem("coresix_show_suggestion", "1");
-                  localStorage.setItem("coresix_last_suggestion_week", String(weekNum));
+                if (newTotalDays > 0 && newTotalDays % 7 === 0) {
+                  saved.showWeeklyCheckin = true;
                 }
 
                 // 5. Save and reload
@@ -5126,22 +5137,34 @@ export default function App() {
 
             {/* Top 3 pillars */}
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {[...PIDS].sort((a,b)=>(st.scores[a]||3)-(st.scores[b]||3)).slice(0,3).map((pid,i)=>{
-                const p=PILLARS[pid]; const score=st.scores[pid]||1;
+              {[...PIDS].sort((a,b)=>(st.scores[a]||3)-(st.scores[b]||3)).slice(0,3).map((pid=>{
+                const p=PILLARS[pid];
+                const score=st.scores[pid]||1;
+                const startRung = score >= 4 ? 2 : score >= 3 ? 1 : 0;
+                const rungNames = ["Rung 1 — Foundation","Rung 2 — Awareness","Rung 3 — Quality"];
+                const rungColors = ["#10B981","#0EA5E9","#8B5CF6"];
+                const rungEmojis = ["🌱","⚡","🔥"];
                 return (
-                  <div key={pid} style={{...S.card,display:"flex",alignItems:"center",gap:14,border:`1.5px solid ${p.border}`}}>
-                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,boxShadow:`0 4px 12px ${p.color}33`,flexShrink:0}}>{p.emoji}</div>
+                  <div key={pid} style={{...S.card,display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:46,height:46,borderRadius:13,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f"}}>{p.name}</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{p.desc}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa",marginBottom:6}}>{p.desc}</div>
+                      <div style={{display:"inline-flex",alignItems:"center",gap:5,background:rungColors[startRung]+"18",borderRadius:8,padding:"4px 10px",border:`1px solid ${rungColors[startRung]}33`}}>
+                        <span style={{fontSize:12}}>{rungEmojis[startRung]}</span>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:rungColors[startRung]}}>{rungNames[startRung]}</span>
+                        {startRung > 0 && <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:rungColors[startRung],opacity:0.7}}>· Skipped ahead!</span>}
+                      </div>
                     </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:p.color}}>{score}/4</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb",textTransform:"uppercase",letterSpacing:1}}>#{i+1} focus</div>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                      {Array.from({length:4},(_,i)=>(
+                        <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<score?p.color:"#e5e5e5"}}/>
+                      ))}
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",marginTop:2}}>{score}/4</div>
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
 
             {/* Why 3 coaching */}
@@ -5286,7 +5309,7 @@ export default function App() {
                                 {habits.filter(h=>h.mastered&&h.habit!==selected).map((h,i)=>(
                                   <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,background:p.light,border:`1px solid ${p.border}`}}>
                                     <span>✅</span>
-                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600,flex:1,lineHeight:1.4}}>{h.habit}</span>
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600,flex:1,lineHeight:1.4}}>{displayHabit(h.habit)}</span>
                                     <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:p.color,opacity:0.6}}>mastered</span>
                                   </div>
                                 ))}
@@ -5295,7 +5318,7 @@ export default function App() {
                                 <div style={{padding:"12px 14px",borderRadius:14,background:isMastered?p.light:"#f8f8f8",border:`1.5px solid ${isMastered?p.color:"#eee"}`}}>
                                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                                     <span style={{fontSize:16}}>{isMastered?"✅":"🎯"}</span>
-                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:isMastered?p.color:"#333",fontWeight:600,flex:1,lineHeight:1.4,textDecoration:isDone?"line-through":"none"}}>{selected}</span>
+                                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:isMastered?p.color:"#333",fontWeight:600,flex:1,lineHeight:1.4,textDecoration:isDone?"line-through":"none"}}>{displayHabit(selected)}</span>
                                   </div>
                                   <div style={{display:"flex",alignItems:"center",gap:5,marginLeft:24}}>
                                     {Array.from({length:5},(_,j)=>(
@@ -5401,36 +5424,103 @@ export default function App() {
           const p=PILLARS[pid];
           const ladder=st.ladder[pid];
           const rungData=LADDER[pid]?.[ladder.rung];
+          const allOptions = rungData?.options || [];
+          const defaultOptions = allOptions.slice(0,3);
+          const moreOptions = allOptions.slice(3);
+          const [showMore, setShowMore] = React.useState(false);
+          const visibleOptions = showMore ? allOptions : defaultOptions;
+          const masteredHabits = (ladder.habits||[]).filter(h=>h.mastered).map(h=>h.habit);
+
           return (
             <div key={pid} className="fu" style={S.page}>
               <div>
-                <div style={S.badge(p.color,p.light)}>{p.emoji} {p.name} · Rung {ladder.rung+1} of 5</div>
+                <div style={S.badge(p.color,p.light)}>{p.emoji} {p.name} · Rung {ladder.rung+1}/5</div>
                 <h2 style={S.h2}>{rungData?.title}</h2>
               </div>
 
-              <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:16}}>
-                {rungData?.options.map((opt,i)=>(
-                  <button key={i} className="tap" onClick={()=>handleSelectHabit(pid,opt)}
-                    style={{width:"100%",padding:"16px 18px",borderRadius:16,border:`1.5px solid ${st.ladder[pid].selected===opt?p.color:"#f0f0f0"}`,background:st.ladder[pid].selected===opt?p.light:"white",cursor:"pointer",textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:st.ladder[pid].selected===opt?p.color:"#333",fontWeight:st.ladder[pid].selected===opt?600:400,lineHeight:1.5,transition:"all 0.2s"}}>
-                    {opt}
+              {/* Why this rung */}
+              {rungData?.why && (
+                <div style={{background:"linear-gradient(135deg,#f8f8f8,white)",borderRadius:16,padding:"14px 16px",border:"1px solid #e8e8e8"}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Why this rung</div>
+                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",lineHeight:1.7}}>{rungData.why}</p>
+                </div>
+              )}
+
+              {/* Mastered habits reminder */}
+              {masteredHabits.length > 0 && (
+                <div style={{padding:"10px 14px",borderRadius:12,background:p.light,border:`1px solid ${p.border}`}}>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:700,marginBottom:4}}>Already mastered in this rung:</div>
+                  {masteredHabits.map((h,i)=>(
+                    <div key={i} style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,opacity:0.8}}>✅ {displayHabit(h)}</div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase"}}>Choose your next habit</div>
+
+                {visibleOptions.map((opt,i)=>{
+                  const alreadyDone = masteredHabits.includes(opt);
+                  return (
+                    <button key={i} className="tap" onClick={()=>!alreadyDone&&handleSelectHabit(pid,opt)}
+                      style={{width:"100%",padding:"16px 18px",borderRadius:16,
+                        border:alreadyDone?`1.5px solid ${p.border}`:`1.5px solid #f0f0f0`,
+                        background:alreadyDone?p.light:"white",
+                        cursor:alreadyDone?"default":"pointer",
+                        textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",
+                        fontSize:14,color:alreadyDone?p.color:"#333",lineHeight:1.5,
+                        opacity:alreadyDone?0.6:1,
+                        display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:16,flexShrink:0}}>{alreadyDone?"✅":"○"}</span>
+                      <span>{opt}</span>
+                    </button>
+                  );
+                })}
+
+                {/* See more / less */}
+                {moreOptions.length > 0 && (
+                  <button onClick={()=>setShowMore(!showMore)}
+                    style={{padding:"10px",borderRadius:12,border:"1.5px dashed #e0e0e0",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
+                    {showMore ? "▲ Show fewer options" : `▾ See ${moreOptions.length} more options`}
                   </button>
-                ))}
+                )}
+
+                {/* Write your own */}
                 {writeOwn.show&&writeOwn.pid===pid ? (
-                  <div style={{...S.card,display:"flex",flexDirection:"column",gap:10}}>
-                    <textarea value={writeOwn.val} onChange={e=>setWriteOwn(w=>({...w,val:e.target.value}))} placeholder="Describe your habit specifically and simply..." style={{...S.input,minHeight:90,resize:"none",borderRadius:12}} rows={3}/>
+                  <div style={{...S.card,display:"flex",flexDirection:"column",gap:12}}>
+                    <div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Your habit</div>
+                      <textarea value={writeOwn.val} onChange={e=>setWriteOwn(w=>({...w,val:e.target.value}))} placeholder="e.g. Walk my dog every morning before breakfast" style={{width:"100%",padding:12,borderRadius:12,border:"1.5px solid #e8e8e8",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,resize:"none",minHeight:70,boxSizing:"border-box"}}/>
+                    </div>
+                    <div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Why did you choose this? <span style={{fontWeight:400,textTransform:"none",fontSize:11}}>(optional — helps your AI coach)</span></div>
+                      <textarea value={writeOwn.reason} onChange={e=>setWriteOwn(w=>({...w,reason:e.target.value}))} placeholder="e.g. I want to combine my dog's routine with my own..." style={{width:"100%",padding:12,borderRadius:12,border:"1.5px solid #e8e8e8",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,resize:"none",minHeight:60,boxSizing:"border-box",color:"#555"}}/>
+                    </div>
+                    <div style={{background:"linear-gradient(135deg,#ECFDF5,#EFF6FF)",borderRadius:10,padding:"10px 12px",border:"1px solid #A7F3D0"}}>
+                      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#065F46",lineHeight:1.5}}>💡 Your reason helps the AI coach understand why this habit matters to you — and give you more specific, personal insights.</p>
+                    </div>
                     <div style={{display:"flex",gap:8}}>
-                      <button className="tap" onClick={()=>{if(writeOwn.val.trim()){handleSelectHabit(pid,writeOwn.val.trim());setWriteOwn({show:false,pid:null,val:""})}}} style={{...S.btn(p.grad),flex:1,fontSize:13,padding:"11px"}}>Save My Habit</button>
-                      <button className="tap" onClick={()=>setWriteOwn({show:false,pid:null,val:""})} style={{...S.btnGhost,flex:1,fontSize:13,padding:"11px"}}>Cancel</button>
+                      <button className="tap" onClick={()=>{
+                        if(writeOwn.val.trim()){
+                          const habitWithReason = writeOwn.reason.trim()
+                            ? `${writeOwn.val.trim()} [reason: ${writeOwn.reason.trim()}]`
+                            : writeOwn.val.trim();
+                          handleSelectHabit(pid, habitWithReason);
+                          setWriteOwn({show:false,pid:null,val:"",reason:""});
+                        }
+                      }} style={S.btn(p.grad)}>Add this habit</button>
+                      <button className="tap" onClick={()=>setWriteOwn({show:false,pid:null,val:"",reason:""})} style={S.btnGhost}>Cancel</button>
                     </div>
                   </div>
                 ):(
-                  <button className="tap" onClick={()=>setWriteOwn({show:true,pid,val:""})} style={{width:"100%",padding:"15px 18px",borderRadius:16,border:"1.5px dashed #ddd",background:"white",cursor:"pointer",textAlign:"left",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#aaa"}}>
+                  <button className="tap" onClick={()=>setWriteOwn({show:true,pid,val:""})}
+                    style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px dashed #e0e0e0",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,cursor:"pointer"}}>
                     ✏️ Write my own habit
                   </button>
                 )}
               </div>
 
-              <button className="tap" onClick={()=>goTo("habits")} style={S.btnGhost}>← Back to habits</button>
+              <button className="tap" onClick={()=>goTo("habits")} style={S.btnGhost}>← Back</button>
             </div>
           );
         })}
