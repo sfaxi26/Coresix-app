@@ -990,7 +990,7 @@ function FuelLayer({ st, update, S, onMealAdded, goToHabits, fuelHabit, fetchAII
 
       {photoLoading && (
         <div style={{...S.card,textAlign:"center",padding:"28px"}}>
-          <div style={{fontSize:32,marginBottom:8,animation:"float 1.5s ease-in-out infinite"}}>🔍</div>
+          <div style={{fontSize:32,marginBottom:8,animation:"bobble 1.5s ease-in-out infinite"}}>🔍</div>
           <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888"}}>Analysing your meal...</p>
         </div>
       )}
@@ -2814,7 +2814,7 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
         {/* Loading */}
         {loading&&(
           <div style={{textAlign:"center",padding:"60px 20px"}}>
-            <div style={{fontSize:48,marginBottom:16,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
+            <div style={{fontSize:48,marginBottom:16,animation:"bobble 1.5s ease-in-out infinite"}}>🧠</div>
             <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:8}}>Analysing your week...</div>
             <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.7}}>
               Reading all 6 pillars · Detecting cross-pillar patterns · Generating your personalised report
@@ -3107,7 +3107,7 @@ function MonthlyLetter({ st, goBack, S }) {
         {/* Loading */}
         {loading&&(
           <div style={{textAlign:"center",padding:"60px 20px"}}>
-            <div style={{fontSize:48,marginBottom:16,animation:"float 1.5s ease-in-out infinite"}}>✉️</div>
+            <div style={{fontSize:48,marginBottom:16,animation:"bobble 1.5s ease-in-out infinite"}}>✉️</div>
             <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:8}}>Writing your letter...</div>
             <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.7}}>
               Reading 30 days of data · Finding your patterns · Writing something honest
@@ -3355,7 +3355,7 @@ function NextWeekPlan({ st, goBack, S }) {
         {/* Loading */}
         {loading&&(
           <div style={{textAlign:"center",padding:"60px 20px"}}>
-            <div style={{fontSize:48,marginBottom:16,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
+            <div style={{fontSize:48,marginBottom:16,animation:"bobble 1.5s ease-in-out infinite"}}>🧠</div>
             <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:"#0f0f0f",marginBottom:8}}>Building your plan...</div>
             <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.7}}>
               Analysing your patterns · Finding your weak days · Generating specific actions
@@ -3525,7 +3525,7 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
 
   if (loading) return (
     <div style={{textAlign:"center",padding:"48px 20px"}}>
-      <div style={{fontSize:32,marginBottom:12,animation:"float 1.5s ease-in-out infinite"}}>🧠</div>
+      <div style={{fontSize:32,marginBottom:12,animation:"bobble 1.5s ease-in-out infinite"}}>🧠</div>
       <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14}}>Analysing your patterns...</p>
     </div>
   );
@@ -4263,12 +4263,12 @@ export default function App() {
   return (
     <div style={{minHeight:"100vh",background:"#F7F6F3",fontFamily:"Plus Jakarta Sans,sans-serif",position:"relative",overflow:"hidden"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,800;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
         body{background:#FAFAF8;overscroll-behavior:none}
         @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-        @keyframes floatSlow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+        @keyframes bobble{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+        @keyframes bobbleSlow{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(2deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
         @keyframes confetti{0%{opacity:1;transform:translate(0,0) rotate(0deg)}100%{opacity:0;transform:translate(var(--vx),var(--vy)) rotate(360deg)}}
         @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
@@ -5283,7 +5283,7 @@ export default function App() {
       {/* ── SPLASH ── */}
         {st.screen==="splash"&&(
           <div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14}}>
-            <div style={{fontSize:60,animation:"floatSlow 3s ease-in-out infinite"}}>✦</div>
+            <div style={{fontSize:60,animation:"bobbleSlow 3s ease-in-out infinite"}}>✦</div>
             <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:52,color:"#0f0f0f",letterSpacing:-2}}>CORE<span style={{color:"#10B981"}}>SIX</span></div>
             <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,letterSpacing:5,color:"#ccc",textTransform:"uppercase"}}>Your Wellness Story</div>
             <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",marginTop:8,textAlign:"center",lineHeight:1.6,maxWidth:260}}>The app that connects the dots between your habits</div>
@@ -5307,7 +5307,7 @@ export default function App() {
                 </div>
                 {PIDS.map((pid,i)=>{
                   const p=PILLARS[pid];
-                  return <div key={pid} style={{position:"absolute",width:46,height:46,borderRadius:"50%",background:p.grad,boxShadow:`0 4px 14px ${p.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,left:`${50+43*Math.cos((i/6)*Math.PI*2-Math.PI/2)}%`,top:`${50+43*Math.sin((i/6)*Math.PI*2-Math.PI/2)}%`,transform:"translate(-50%,-50%)",animation:`float ${2.2+i*0.2}s ease-in-out infinite`,animationDelay:`${i*0.15}s`}}>{p.emoji}</div>;
+                  return <div key={pid} style={{position:"absolute",width:46,height:46,borderRadius:"50%",background:p.grad,boxShadow:`0 4px 14px ${p.color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,left:`${50+43*Math.cos((i/6)*Math.PI*2-Math.PI/2)}%`,top:`${50+43*Math.sin((i/6)*Math.PI*2-Math.PI/2)}%`,transform:"translate(-50%,-50%)",animation:`bobble ${2.2+i*0.2}s ease-in-out infinite`,animationDelay:`${i*0.15}s`}}>{p.emoji}</div>;
                 })}
               </div>
             </div>
@@ -5349,7 +5349,7 @@ export default function App() {
             </div>
 
             <div style={{...S.card,textAlign:"center",padding:"28px 20px"}}>
-              <div style={{fontSize:48,marginBottom:12,animation:"float 2s ease-in-out infinite"}}>{curQ.emoji}</div>
+              <div style={{fontSize:48,marginBottom:12,animation:"bobble 2s ease-in-out infinite"}}>{curQ.emoji}</div>
               <h2 style={{...S.h2,fontSize:20}}>{curQ.question}</h2>
               <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#ccc",marginTop:6}}>CoreSix is a wellness app, not a medical tool.</p>
             </div>
@@ -5374,7 +5374,7 @@ export default function App() {
         {st.screen==="profile_reveal"&&(
           <div className="fu" style={S.page}>
             <div style={{textAlign:"center"}}>
-              <div style={{fontSize:52,marginBottom:12,animation:"float 2s ease-in-out infinite"}}>🎯</div>
+              <div style={{fontSize:52,marginBottom:12,animation:"bobble 2s ease-in-out infinite"}}>🎯</div>
               <h2 style={S.h1}>Your profile is ready.</h2>
               <p style={S.sub}>{COACHING.profile_reveal.prefix}</p>
             <div style={{background:"linear-gradient(135deg,#ECFDF5,#EFF6FF)",borderRadius:14,padding:"12px 16px",border:"1px solid #A7F3D0",marginTop:4}}>
@@ -5814,6 +5814,87 @@ export default function App() {
           );
         })}
 
+        {/* ── DASHBOARD (Brain) ── */}
+        {st.screen==="dashboard"&&(
+          <div className="fu" style={S.page}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",padding:4}}>←</button>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0a0a0a",letterSpacing:-0.5}}>Your Intelligence</div>
+            </div>
+            <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} impactHistory={st.impactHistory||[]} ladder={st.ladder||{}} scores={st.scores||{}} />
+          </div>
+        )}
+
+        {/* ── WEEKLY SUMMARY ── */}
+        {st.screen==="weekly_summary"&&(
+          <div className="fu" style={S.page}>
+            {/* Week complete screen is rendered inline above after check-in */}
+            {(()=>{
+              const totalDays = activePids.reduce((sum,pid)=>
+                sum+(st.history||[]).filter(h=>h.pillars?.includes(pid)).slice(-7).length, 0);
+              const maxDays = activePids.length * 7;
+              const pct2 = Math.round((totalDays/maxDays)*100);
+              const label = pct2>=80?"Outstanding":pct2>=60?"Strong":pct2>=40?"Building":"Keep going";
+              const bestPid = activePids.reduce((best,pid)=>{
+                const d=(st.history||[]).filter(h=>h.pillars?.includes(pid)).slice(-7).length;
+                const bd=(st.history||[]).filter(h=>h.pillars?.includes(best)).slice(-7).length;
+                return d>bd?pid:best;
+              }, activePids[0]);
+              const bestP = bestPid ? PILLARS[bestPid] : null;
+              const quote = getDailyQuote(st.streak);
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{textAlign:"center",paddingTop:8}}>
+                    <div style={{fontSize:48,marginBottom:12}}>📊</div>
+                    <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:32,color:"#0a0a0a",letterSpacing:-1}}>Week {Math.floor(st.streak/7)||1} Complete</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#94a3b8",marginTop:6}}>Here is how you showed up.</p>
+                  </div>
+                  {activePids.map(pid=>{
+                    const p=PILLARS[pid];
+                    const days=(st.history||[]).filter(h=>h.pillars?.includes(pid)).slice(-7).length;
+                    const label2 = days>=6?"Excellent":days>=4?"Strong":days>=2?"Building":"Just starting";
+                    const color2 = days>=6?"#10B981":days>=4?"#0EA5E9":days>=2?"#F59E0B":"#aaa";
+                    const ladder=st.ladder?.[pid]||{};
+                    const mastered=(ladder.habits||[]).filter(h=>h.mastered).length;
+                    return (
+                      <div key={pid} style={S.card}>
+                        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+                          <div style={{width:42,height:42,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
+                          <div style={{flex:1}}>
+                            <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:15,color:"#0a0a0a"}}>{p.name}</div>
+                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:color2}}>{days}/7 days · {label2}</div>
+                          </div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa"}}>{mastered}/3 mastered</div>
+                        </div>
+                        <div style={{background:"#f5f5f5",borderRadius:6,height:5,overflow:"hidden"}}>
+                          <div style={{height:"100%",borderRadius:6,background:p.grad,width:`${Math.round((days/7)*100)}%`}}/>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div style={{background:"#0a0a0a",borderRadius:20,padding:"24px 20px",textAlign:"center"}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Habit consistency</div>
+                    <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:64,color:"white",lineHeight:1,letterSpacing:-3}}>{pct2}%</div>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:4}}>{label} · 🔥 {st.streak} day streak</div>
+                  </div>
+                  {bestP&&(
+                    <div style={{...S.card,background:bestP.light,border:`1.5px solid ${bestP.border}`}}>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:bestP.color,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>Biggest win</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#0a0a0a",lineHeight:1.6}}>{bestP.emoji} <strong>{bestP.name}</strong> was your strongest pillar this week.</div>
+                    </div>
+                  )}
+                  <div style={{padding:"14px 16px",borderRadius:14,background:"#f8f8f8"}}>
+                    <p style={{fontFamily:"Fraunces,serif",fontSize:13,color:"#555",lineHeight:1.6,fontStyle:"italic"}}>"{quote.quote}"</p>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginTop:4}}>— {quote.author}</p>
+                  </div>
+                  <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
+                  <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Brain Tab</button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ── NEXT WEEK PLAN ── */}
         {st.screen==="next_week_plan"&&(
           <NextWeekPlan st={st} goBack={()=>goTo("dashboard")} S={S}/>
@@ -5981,7 +6062,7 @@ export default function App() {
 
             {/* Confetti dots */}
             {[...Array(12)].map((_,i)=>(
-              <div key={i} style={{position:"absolute",width:6,height:6,borderRadius:"50%",background:["#10B981","#0EA5E9","#8B5CF6","#F59E0B","#EF4444"][i%5],top:`${10+Math.random()*80}%`,left:`${5+Math.random()*90}%`,opacity:0.6,animation:`float ${1.5+i*0.3}s ease-in-out infinite`,animationDelay:`${i*0.2}s`}}/>
+              <div key={i} style={{position:"absolute",width:6,height:6,borderRadius:"50%",background:["#10B981","#0EA5E9","#8B5CF6","#F59E0B","#EF4444"][i%5],top:`${10+Math.random()*80}%`,left:`${5+Math.random()*90}%`,opacity:0.6,animation:`bobble ${1.5+i*0.3}s ease-in-out infinite`,animationDelay:`${i*0.2}s`}}/>
             ))}
 
             {/* Streak number — hero */}
