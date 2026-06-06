@@ -668,6 +668,15 @@ const migrateState = (s) => {
   if (!s.rest) s.rest = {bedtime:"",wakeTime:"",sleepDate:"",quality:0,windDown:[],sleepHistory:[]};
   if (!s.calm) s.calm = {stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""};
   if (!s.maintainedPillars) s.maintainedPillars = [];
+  // Ensure ALL pillars have ladder entries
+  const PIDS_LIST = ["fuel","move","rest","calm","connect","focus"];
+  if (!s.ladder) s.ladder = {};
+  PIDS_LIST.forEach(pid => {
+    if (!s.ladder[pid]) {
+      s.ladder[pid] = {rung:0, habits:[], days:0, selected:null};
+    }
+    if (!s.ladder[pid].habits) s.ladder[pid].habits = [];
+  });
   // Migrate ladder to new multi-habit format
   if (s.ladder) {
     Object.keys(s.ladder).forEach(pid => {
@@ -5540,8 +5549,8 @@ export default function App() {
             <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14,paddingBottom:16}}>
               {activePids.map((pid,i)=>{
                 const p=PILLARS[pid];
-                const ladder=st.ladder[pid];
-                const isDone=st.checkedToday[pid];
+                const ladder=st.ladder?.[pid]||{rung:0,habits:[],days:0,selected:null};
+                const isDone=st.checkedToday?.[pid]||false;
                 const rungData=LADDER[pid]?.[ladder.rung];
                 const selected=ladder.selected;
                 return (
