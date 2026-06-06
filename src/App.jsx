@@ -621,6 +621,7 @@ const initState = () => ({
   weeklyImpact:{}, impactHistory:[],
   showWeeklyCheckin:false,
   selectedPillars:null,
+  maintainedPillars:[], // pillars being maintained (not actively built)
   coachingRead: {},
   morningIdx:0,
   fuel:{
@@ -666,6 +667,7 @@ const migrateState = (s) => {
   if (!s.move) s.move = {stepGoal:7000,stepsToday:0,stepsDate:"",workouts:[]};
   if (!s.rest) s.rest = {bedtime:"",wakeTime:"",sleepDate:"",quality:0,windDown:[],sleepHistory:[]};
   if (!s.calm) s.calm = {stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""};
+  if (!s.maintainedPillars) s.maintainedPillars = [];
   // Migrate ladder to new multi-habit format
   if (s.ladder) {
     Object.keys(s.ladder).forEach(pid => {
@@ -2787,7 +2789,7 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
   };
 
   return (
-    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
+    <div style={{minHeight:"100vh",background:"#F7F6F3"}}>
       <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
         {/* Header */}
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
@@ -3079,7 +3081,7 @@ function MonthlyLetter({ st, goBack, S }) {
   const PILLAR_EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
 
   return (
-    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
+    <div style={{minHeight:"100vh",background:"#F7F6F3"}}>
       <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
 
         {/* Header */}
@@ -3319,7 +3321,7 @@ function NextWeekPlan({ st, goBack, S }) {
   };
 
   return (
-    <div style={{minHeight:"100vh",background:"#FAFAF8"}}>
+    <div style={{minHeight:"100vh",background:"#F7F6F3"}}>
       <div style={{maxWidth:430,margin:"0 auto",padding:"40px 22px 80px"}}>
 
         {/* Header */}
@@ -4234,24 +4236,25 @@ export default function App() {
 
   // ── STYLES ──
   const S = {
-    page: {minHeight:"100vh",padding:"40px 22px 24px",display:"flex",flexDirection:"column",gap:16},
-    card: {background:"white",borderRadius:20,padding:"18px",border:"1.5px solid #f0f0f0",boxShadow:"0 4px 20px #0001"},
-    badge:(color,bg)=>({display:"inline-flex",background:bg||"#ECFDF5",borderRadius:20,padding:"5px 14px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:color||"#10B981",letterSpacing:2,textTransform:"uppercase",width:"fit-content",marginBottom:10}),
-    h1: {fontFamily:"Fraunces,serif",fontWeight:900,fontSize:36,color:"#0f0f0f",letterSpacing:-1,lineHeight:1.1},
-    h2: {fontFamily:"Fraunces,serif",fontWeight:800,fontSize:26,color:"#0f0f0f",letterSpacing:-0.5,lineHeight:1.2},
-    sub: {fontFamily:"Plus Jakarta Sans,sans-serif",color:"#888",fontSize:13,lineHeight:1.7,marginTop:6},
-    btn:(grad,shadow)=>({width:"100%",padding:"15px",borderRadius:16,border:"none",background:grad||"linear-gradient(135deg,#0f0f0f,#2d2d2d)",color:"white",fontSize:15,fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,cursor:"pointer",boxShadow:shadow||"0 8px 24px #0002",letterSpacing:0.3,transition:"all 0.2s"}),
-    btnGhost:{width:"100%",padding:"14px",borderRadius:14,border:"1.5px solid #e8e8e8",background:"white",color:"#666",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,fontWeight:500,cursor:"pointer"},
-    input:{width:"100%",background:"white",border:"1.5px solid #e8e8e8",borderRadius:14,padding:"14px 18px",color:"#0f0f0f",fontSize:15,fontFamily:"Plus Jakarta Sans,sans-serif",boxShadow:"0 2px 8px #0001"},
+    page: {minHeight:"100vh",padding:"40px 20px 100px",display:"flex",flexDirection:"column",gap:14},
+    card: {background:"white",borderRadius:22,padding:"18px 20px",border:"1px solid rgba(0,0,0,0.06)",boxShadow:"0 2px 12px rgba(0,0,0,0.04),0 1px 3px rgba(0,0,0,0.06)"},
+    cardDark: {background:"#0f0f0f",borderRadius:22,padding:"20px",border:"none",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"},
+    badge:(color,bg)=>({display:"inline-flex",alignItems:"center",gap:5,background:bg||"#ECFDF5",borderRadius:100,padding:"4px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:color||"#10B981",letterSpacing:1.5,textTransform:"uppercase",width:"fit-content",marginBottom:8}),
+    h1: {fontFamily:"Fraunces,serif",fontWeight:900,fontSize:38,color:"#0a0a0a",letterSpacing:-1.5,lineHeight:1.05},
+    h2: {fontFamily:"Fraunces,serif",fontWeight:800,fontSize:26,color:"#0a0a0a",letterSpacing:-0.8,lineHeight:1.15},
+    sub: {fontFamily:"Plus Jakarta Sans,sans-serif",color:"#94a3b8",fontSize:13,lineHeight:1.75,marginTop:4,fontWeight:400},
+    btn:(grad,shadow)=>({width:"100%",padding:"16px",borderRadius:14,border:"none",background:grad||"#0a0a0a",color:"white",fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,cursor:"pointer",boxShadow:shadow||"0 4px 20px rgba(0,0,0,0.15)",letterSpacing:0.5,transition:"all 0.2s ease"}),
+    btnGhost:{width:"100%",padding:"15px",borderRadius:14,border:"1.5px solid rgba(0,0,0,0.08)",background:"white",color:"#374151",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,fontWeight:500,cursor:"pointer",transition:"all 0.2s"},
+    input:{width:"100%",background:"white",border:"1.5px solid rgba(0,0,0,0.08)",borderRadius:14,padding:"15px 18px",color:"#0a0a0a",fontSize:15,fontFamily:"Plus Jakarta Sans,sans-serif",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"},
   };
 
   const curQ = QUESTIONNAIRE[st.qIndex];
   const morningWisdom = COACHING.morning[st.streak % COACHING.morning.length];
 
   return (
-    <div style={{minHeight:"100vh",background:"#FAFAF8",fontFamily:"Plus Jakarta Sans,sans-serif",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#F7F6F3",fontFamily:"Plus Jakarta Sans,sans-serif",position:"relative",overflow:"hidden"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,800;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
         body{background:#FAFAF8;overscroll-behavior:none}
         @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
@@ -4389,37 +4392,81 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Inactive pillars to add */}
-              {inactivePillars.length > 0 && (
-                <div style={{marginBottom:20}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {inactivePillars.map(pid=>{
-                      const p = PILLARS[pid];
-                      const score = st.scores[pid] || 1;
-                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
-                      return (
-                        <button key={pid} className="tap" onClick={()=>{
-                          const newPillars = [...activePillars, pid];
-                          update({selectedPillars: newPillars});
-                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
-                          setShowAddPillar(null);
-                          showToast(`✅ ${p.name} added to your week!`, p.color);
-                          if (currentPid) goTo(`pick_${currentPid}`);
-                          else goTo("habits");
-                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
-                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
-                          <div style={{flex:1}}>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
-                          </div>
-                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
-                        </button>
-                      );
-                    })}
+              {/* Step 1: Pick which active pillar to maintain */}
+              {(()=>{
+                // Using closure variables instead of hooks (can't use hooks inside render fn)
+                const swapStep = showAddPillar.step || 1;
+                const pillarToMaintain = showAddPillar.maintain || null;
+                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
+                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
+
+                if (swapStep === 1) return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {activePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const ladder = st.ladder?.[pid]||{};
+                        const rung = (ladder.rung||0)+1;
+                        const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
+                            style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+
+                // Step 2: Pick new pillar to add
+                return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
+                    {pillarToMaintain && (
+                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
+                      </div>
+                    )}
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {inactivePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const score = st.scores[pid] || 1;
+                        const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{
+                            // Swap: maintain old, add new
+                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
+                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
+                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
+                            localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                            setShowAddPillar(null);
+                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
+                            if (currentPid) goTo(`pick_${pid}`);
+                            else goTo("habits");
+                          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
+                  </div>
+                );
+              })()}
 
               {/* Actions */}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -4604,37 +4651,81 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Inactive pillars to add */}
-              {inactivePillars.length > 0 && (
-                <div style={{marginBottom:20}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {inactivePillars.map(pid=>{
-                      const p = PILLARS[pid];
-                      const score = st.scores[pid] || 1;
-                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
-                      return (
-                        <button key={pid} className="tap" onClick={()=>{
-                          const newPillars = [...activePillars, pid];
-                          update({selectedPillars: newPillars});
-                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
-                          setShowAddPillar(null);
-                          showToast(`✅ ${p.name} added to your week!`, p.color);
-                          if (currentPid) goTo(`pick_${currentPid}`);
-                          else goTo("habits");
-                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
-                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
-                          <div style={{flex:1}}>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
-                          </div>
-                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
-                        </button>
-                      );
-                    })}
+              {/* Step 1: Pick which active pillar to maintain */}
+              {(()=>{
+                // Using closure variables instead of hooks (can't use hooks inside render fn)
+                const swapStep = showAddPillar.step || 1;
+                const pillarToMaintain = showAddPillar.maintain || null;
+                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
+                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
+
+                if (swapStep === 1) return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {activePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const ladder = st.ladder?.[pid]||{};
+                        const rung = (ladder.rung||0)+1;
+                        const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
+                            style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+
+                // Step 2: Pick new pillar to add
+                return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
+                    {pillarToMaintain && (
+                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
+                      </div>
+                    )}
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {inactivePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const score = st.scores[pid] || 1;
+                        const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{
+                            // Swap: maintain old, add new
+                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
+                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
+                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
+                            localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                            setShowAddPillar(null);
+                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
+                            if (currentPid) goTo(`pick_${pid}`);
+                            else goTo("habits");
+                          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
+                  </div>
+                );
+              })()}
 
               {/* Actions */}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -4819,37 +4910,81 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Inactive pillars to add */}
-              {inactivePillars.length > 0 && (
-                <div style={{marginBottom:20}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Add one of these</div>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {inactivePillars.map(pid=>{
-                      const p = PILLARS[pid];
-                      const score = st.scores[pid] || 1;
-                      const scoreLabels = ["Needs work","Developing","Good","Excellent"];
-                      return (
-                        <button key={pid} className="tap" onClick={()=>{
-                          const newPillars = [...activePillars, pid];
-                          update({selectedPillars: newPillars});
-                          localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
-                          setShowAddPillar(null);
-                          showToast(`✅ ${p.name} added to your week!`, p.color);
-                          if (currentPid) goTo(`pick_${currentPid}`);
-                          else goTo("habits");
-                        }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
-                          <div style={{width:44,height:44,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.emoji}</div>
-                          <div style={{flex:1}}>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f",marginBottom:2}}>{p.name}</div>
-                            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Your score: {scoreLabels[score-1]||"not yet rated"}</div>
-                          </div>
-                          <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add +</span>
-                        </button>
-                      );
-                    })}
+              {/* Step 1: Pick which active pillar to maintain */}
+              {(()=>{
+                // Using closure variables instead of hooks (can't use hooks inside render fn)
+                const swapStep = showAddPillar.step || 1;
+                const pillarToMaintain = showAddPillar.maintain || null;
+                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
+                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
+
+                if (swapStep === 1) return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {activePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const ladder = st.ladder?.[pid]||{};
+                        const rung = (ladder.rung||0)+1;
+                        const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
+                            style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+
+                // Step 2: Pick new pillar to add
+                return (
+                  <div style={{marginBottom:20}}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
+                    {pillarToMaintain && (
+                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
+                      </div>
+                    )}
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {inactivePillars.map(pid=>{
+                        const p = PILLARS[pid];
+                        const score = st.scores[pid] || 1;
+                        const scoreLabels = ["Needs work","Developing","Good","Excellent"];
+                        return (
+                          <button key={pid} className="tap" onClick={()=>{
+                            // Swap: maintain old, add new
+                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
+                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
+                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
+                            localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
+                            setShowAddPillar(null);
+                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
+                            if (currentPid) goTo(`pick_${pid}`);
+                            else goTo("habits");
+                          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
+                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
+                            </div>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
+                  </div>
+                );
+              })()}
 
               {/* Actions */}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -5297,22 +5432,29 @@ export default function App() {
         {/* ── HABITS ── */}
         {st.screen==="habits"&&(
           <div className="fu" style={S.page}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <div style={S.badge()}>Day {st.streak+1}</div>
-                <h2 style={S.h2}>Today's habits</h2>
+            {/* Header — redesigned */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2}}>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#94a3b8",fontWeight:700,letterSpacing:2.5,textTransform:"uppercase",marginBottom:10}}>Day {st.streak+1}</div>
+                <h2 style={{...S.h2,fontSize:30,marginBottom:12}}>Today's habits</h2>
+                {/* Streak pill */}
+                <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#0a0a0a",borderRadius:100,padding:"6px 14px 6px 10px"}}>
+                  <span style={{fontSize:13}}>🔥</span>
+                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"white",fontWeight:700}}>{st.streak} day streak</span>
+                </div>
               </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
-                <button className="tap" onClick={()=>setShowChangePillars(true)} style={{background:"white",border:"1.5px solid #e8e8e8",borderRadius:12,padding:"7px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#666",cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
+                <button className="tap" onClick={()=>setShowChangePillars(true)} style={{background:"white",border:"1.5px solid rgba(0,0,0,0.07)",borderRadius:12,padding:"7px 14px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#374151",cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
                   <span>⚙️</span> Change
                 </button>
-              <div style={{position:"relative",width:60,height:60}}>
-                <svg width="60" height="60" viewBox="0 0 60 60">
-                  <circle cx="30" cy="30" r="24" fill="none" stroke="#f0f0f0" strokeWidth="4.5"/>
-                  <circle cx="30" cy="30" r="24" fill="none" stroke="#10B981" strokeWidth="4.5" strokeDasharray={`${150.8*pct/100} 150.8`} strokeLinecap="round" transform="rotate(-90 30 30)" style={{transition:"stroke-dasharray 0.5s ease"}}/>
-                </svg>
-                <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>{pct}%</div>
-              </div>
+                {/* Progress ring */}
+                <div style={{position:"relative",width:56,height:56}}>
+                  <svg width="56" height="56" viewBox="0 0 56 56">
+                    <circle cx="28" cy="28" r="22" fill="none" stroke="#f0efed" strokeWidth="4"/>
+                    <circle cx="28" cy="28" r="22" fill="none" stroke={pct===100?"#10B981":"#0a0a0a"} strokeWidth="4" strokeDasharray={`${138.2*pct/100} 138.2`} strokeLinecap="round" transform="rotate(-90 28 28)" style={{transition:"stroke-dasharray 0.6s ease"}}/>
+                  </svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:800,fontSize:12,color:pct===100?"#10B981":"#0a0a0a"}}>{pct}%</div>
+                </div>
               </div>
             </div>
 
@@ -5321,6 +5463,40 @@ export default function App() {
               <span style={{fontSize:16,flexShrink:0}}>☀️</span>
               <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#92400E",lineHeight:1.65,fontStyle:"italic"}}>{morningWisdom}</p>
             </div>
+
+            {/* Maintained pillars */}
+            {(st.maintainedPillars||[]).length > 0 && (
+              <div style={{marginBottom:4}}>
+                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Maintaining</div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {(st.maintainedPillars||[]).map(pid=>{
+                    const p = PILLARS[pid];
+                    const ladder = st.ladder?.[pid]||{};
+                    const isDone = st.checkedToday?.[pid];
+                    return (
+                      <div key={pid} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:14,background:isDone?p.light:"#f8f8f8",border:`1px solid ${isDone?p.border:"#eee"}`}}>
+                        <div style={{width:34,height:34,borderRadius:10,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,opacity:0.8}}>{p.emoji}</div>
+                        <div style={{flex:1}}>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:isDone?p.color:"#555"}}>{p.name}</div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{st.ladder?.[pid]?.selected ? `"${displayHabit(st.ladder[pid].selected)}"` : "No habit selected"}</div>
+                        </div>
+                        {isDone
+                          ? <span style={{fontSize:16}}>✅</span>
+                          : <button className="tap" onClick={()=>handleCheckIn(pid)} style={{padding:"6px 12px",borderRadius:10,border:`1px solid ${p.border}`,background:p.light,color:p.color,fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,cursor:"pointer"}}>Done</button>
+                        }
+                        <button className="tap" onClick={()=>{
+                          // Move back to active
+                          const newActive = [...(st.selectedPillars||getWeakest3()), pid];
+                          const newMaintained = (st.maintainedPillars||[]).filter(p=>p!==pid);
+                          update({selectedPillars:newActive, maintainedPillars:newMaintained});
+                          showToast(`${p.name} moved back to active building`, p.color);
+                        }} style={{padding:"4px 8px",borderRadius:8,border:"1px solid #e8e8e8",background:"white",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,cursor:"pointer"}}>↑ Build</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Daily quote — shows periodically */}
             {st.streak % 3 === 0 && st.streak >= 3 && (()=>{
@@ -5789,316 +5965,58 @@ export default function App() {
 
         {/* ── CELEBRATE ── */}
         {st.screen==="celebrate"&&(
-          <div className="fu" style={{...S.page,alignItems:"center",justifyContent:"center",textAlign:"center"}}>
-            <div style={{fontSize:72,animation:"floatSlow 2.5s ease-in-out infinite"}}>🏆</div>
-            <div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:72,color:"#0f0f0f",lineHeight:1,letterSpacing:-3}}>{st.streak}</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,letterSpacing:4,color:"#bbb",textTransform:"uppercase",marginTop:4}}>Day Streak</div>
-            </div>
-            <div style={{...S.card,maxWidth:320,width:"100%",textAlign:"center"}}>
-              <div style={{display:"inline-flex",background:stage.bg,borderRadius:20,padding:"4px 14px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:stage.color,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>{stage.name}</div>
-              <p style={{fontFamily:"Fraunces,serif",fontSize:17,color:"#0f0f0f",lineHeight:1.5,fontStyle:"italic"}}>"{stage.desc}"</p>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:320}}>
-              {activePids.map(pid=>{
-                const p=PILLARS[pid];
-                return <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:14,background:p.light,border:`1px solid ${p.border}`,textAlign:"left"}}>
-                  <div style={{width:32,height:32,borderRadius:9,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>✓</div>
-                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",flex:1,lineHeight:1.4}}>{st.ladder[pid].selected}</span>
-                </div>;
-              })}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:320}}>
-              <button className="tap" onClick={()=>{update({checkedToday:Object.fromEntries(PIDS.map(p=>[p,false]))});goTo("habits");}} style={S.btn()}>Tomorrow's Habits →</button>
-              <div style={{display:"flex",gap:10}}>
-              <button className="tap" onClick={()=>goTo("dashboard")} style={{...S.btnGhost,flex:3}}>View Dashboard</button>
-              <button className="tap" onClick={()=>goTo("settings")} style={{...S.btnGhost,flex:1,fontSize:18,padding:"14px 10px"}}>⚙️</button>
-            </div>
-            </div>
-          </div>
-        )}
+          <div className="fu" style={{minHeight:"100vh",background:"#0a0a0a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px",gap:32,textAlign:"center",position:"relative",overflow:"hidden"}}>
 
-        {/* ── WEEKLY SUMMARY ── */}
-        {st.screen==="weekly_summary"&&(
-          <div className="fu" style={S.page}>
-            <div style={{textAlign:"center",paddingTop:8}}>
-              <div style={{fontSize:48,marginBottom:12}}>📊</div>
-              <h2 style={S.h1}>Your week in CoreSix</h2>
-              <p style={S.sub}>Here is the real impact your habits had this week.</p>
+            {/* Background glow */}
+            <div style={{position:"absolute",top:"20%",left:"50%",transform:"translateX(-50%)",width:300,height:300,background:`radial-gradient(circle, ${activePids[0]?PILLARS[activePids[0]].color+"40":"#10B98140"} 0%, transparent 70%)`,pointerEvents:"none"}}/>
+
+            {/* Confetti dots */}
+            {[...Array(12)].map((_,i)=>(
+              <div key={i} style={{position:"absolute",width:6,height:6,borderRadius:"50%",background:["#10B981","#0EA5E9","#8B5CF6","#F59E0B","#EF4444"][i%5],top:`${10+Math.random()*80}%`,left:`${5+Math.random()*90}%`,opacity:0.6,animation:`float ${1.5+i*0.3}s ease-in-out infinite`,animationDelay:`${i*0.2}s`}}/>
+            ))}
+
+            {/* Streak number — hero */}
+            <div style={{position:"relative",zIndex:1}}>
+              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:96,color:"white",lineHeight:0.9,letterSpacing:-6,marginBottom:8}}>{st.streak}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,letterSpacing:5,color:"rgba(255,255,255,0.3)",textTransform:"uppercase"}}>Day Streak</div>
             </div>
 
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {activePids.map(pid=>{
+            {/* Stage badge */}
+            <div style={{zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+              <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.08)",borderRadius:100,padding:"6px 16px",border:"1px solid rgba(255,255,255,0.12)"}}>
+                <span style={{fontSize:16}}>{stage.emoji||"🌱"}</span>
+                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.7)",letterSpacing:2,textTransform:"uppercase"}}>{stage.name}</span>
+              </div>
+              <p style={{fontFamily:"Fraunces,serif",fontSize:16,color:"rgba(255,255,255,0.5)",lineHeight:1.5,fontStyle:"italic",maxWidth:260}}>"{stage.desc}"</p>
+            </div>
+
+            {/* Habits done today */}
+            <div style={{zIndex:1,display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:320}}>
+              {activePids.filter(pid=>st.checkedToday?.[pid]).map(pid=>{
                 const p=PILLARS[pid];
-                const answer=st.weeklyImpact?.[pid]??null;
-                const iq=IMPACT_QUESTIONS[pid];
-                const opt=answer!==null?iq.options[answer]:null;
-                const days=st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length;
-                const trend=answer!==null ? IMPACT_TRENDS[Math.min(answer,3)] : "not rated";
+                const habit = displayHabit(st.ladder?.[pid]?.selected)||"";
                 return (
-                  <div key={pid} style={{...S.card,border:`1.5px solid ${answer>=2?p.border:"#f0f0f0"}`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                      <div style={{width:42,height:42,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,boxShadow:`0 4px 12px ${p.color}33`}}>{p.emoji}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{days}/7 days · {trend}</div>
-                      </div>
-                      {opt&&<div style={{textAlign:"center"}}>
-                        <div style={{fontSize:22}}>{opt.emoji}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:p.color,fontWeight:600,marginTop:2}}>{opt.label}</div>
-                      </div>}
+                  <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:16,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.08)",textAlign:"left"}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{p.emoji}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:p.color,letterSpacing:0.5,marginBottom:1}}>{p.name}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",lineHeight:1.3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{habit}</div>
                     </div>
-                    <div style={{background:"#f5f5f5",borderRadius:6,height:5,overflow:"hidden"}}>
-                      <div style={{height:"100%",borderRadius:6,background:p.grad,width:`${(days/7)*100}%`,transition:"width 0.8s ease"}}/>
-                    </div>
+                    <span style={{fontSize:18}}>✅</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Coach insight */}
-            {(()=>{
-              // Sort by impact score — make separate copies to avoid mutation bug
-              const scoreList = activePids.map(pid=>({
-                pid,
-                score: st.weeklyImpact?.[pid] ?? -1,
-                days: st.history.filter(h=>h.pillars?.includes(pid)).slice(-7).length
-              }));
-              const sortedByBest  = [...scoreList].sort((a,b)=>b.score-a.score);
-              const sortedByWorst = [...scoreList].sort((a,b)=>a.score-b.score);
-              const best  = sortedByBest[0];
-              const worst = sortedByWorst[0];
-              const bestP  = best  ? PILLARS[best.pid]  : null;
-              const worstP = worst ? PILLARS[worst.pid] : null;
-              const different = best?.pid !== worst?.pid;
-              return (
-                <div style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",borderRadius:18,padding:"20px",border:"1px solid #DDD6FE"}}>
-                  <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:17,color:"#0f0f0f",marginBottom:10}}>Your habits are working.</div>
-                  {bestP && best.score >= 0 && (
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7,marginBottom:8}}>
-                      {bestP.emoji} <strong>{bestP.name}</strong> is your biggest win this week. Keep building on this momentum.
-                    </p>
-                  )}
-                  {worstP && different && worst.score >= 0 && worst.score < 2 && (
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
-                      {worstP.emoji} <strong>{worstP.name}</strong> needs the most attention next week. One tiny habit at a time.
-                    </p>
-                  )}
-                  {(!best || best.score < 0) && (
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>
-                      Every check-in this week built something real. Keep showing up.
-                    </p>
-                  )}
-                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#8B5CF6",marginTop:10,lineHeight:1.6,fontStyle:"italic"}}>
-                    "Trust the work when the results hide. Growth is often invisible before it is visible."
-                  </p>
-                </div>
-              );
-            })()}
-
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-
-              <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
-              <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Full Dashboard</button>
+            {/* Actions */}
+            <div style={{zIndex:1,display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:320}}>
+              <button className="tap" onClick={()=>goTo("explore")} style={{...S.btn("rgba(255,255,255,0.1)"),border:"1px solid rgba(255,255,255,0.15)",color:"white"}}>
+                📚 Read today's science →
+              </button>
+              <button className="tap" onClick={()=>goTo("habits")} style={{...S.btn("white"),color:"#0a0a0a"}}>
+                Back to home
+              </button>
             </div>
           </div>
         )}
 
-        {/* ── DASHBOARD ── */}
-        {st.screen==="dashboard"&&(
-          <div className="fu" style={{...S.page,paddingBottom:90}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",marginBottom:2}}>Good day,</p>
-                <h2 style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:30,color:"#0f0f0f",letterSpacing:-0.5}}>{st.name}</h2>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end"}}>
-                <div style={{...S.card,textAlign:"center",padding:"12px 16px"}}>
-                  <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:30,color:"#0f0f0f",lineHeight:1}}>{st.streak}</div>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",letterSpacing:2,textTransform:"uppercase",marginTop:2}}>streak 🔥</div>
-                </div>
-                <button className="tap" onClick={resetApp} style={{background:"white",border:"1.5px solid #fee2e2",borderRadius:10,padding:"6px 12px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,color:"#ef4444",cursor:"pointer"}}>
-                  🔄 Restart
-                </button>
-              </div>
-            </div>
-
-            <div style={{display:"flex",gap:4,background:"white",borderRadius:14,padding:4,border:"1.5px solid #f0f0f0",boxShadow:"0 2px 8px #0001"}}>
-              {["today","pillars","impact","brain"].map(t=>(
-                <button key={t} onClick={()=>update({tab:t})} style={{flex:1,padding:"10px",borderRadius:10,border:"none",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:12,cursor:"pointer",textTransform:"capitalize",transition:"all 0.2s",background:st.tab===t?"#0f0f0f":"transparent",color:st.tab===t?"white":"#aaa",boxShadow:st.tab===t?"0 4px 12px #0003":"none"}}>
-                  {t.charAt(0).toUpperCase()+t.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {st.tab==="today"&&(
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                <div style={S.card}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                    <div><div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:15,color:"#0f0f0f"}}>Today</div><div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",marginTop:2}}>{stage.name} stage</div></div>
-                    <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:30,color:"#10B981"}}>{done3}<span style={{fontSize:16,color:"#ddd"}}>/{activePids.length}</span></div>
-                  </div>
-                  <div style={{background:"#f5f5f5",borderRadius:8,height:7,overflow:"hidden"}}>
-                    <div style={{height:"100%",borderRadius:8,background:"linear-gradient(90deg,#10B981,#34D399)",width:`${pct}%`,transition:"width 0.6s ease"}}/>
-                  </div>
-                </div>
-                {activePids.map(pid=>{
-                  const p=PILLARS[pid]; const isDone=st.checkedToday[pid]; const selected=st.ladder[pid].selected;
-                  return <div key={pid} style={{...S.card,border:`1.5px solid ${isDone?p.border:"#f0f0f0"}`,display:"flex",alignItems:"center",gap:12,transition:"all 0.3s"}}>
-                    <div style={{width:42,height:42,borderRadius:12,background:isDone?p.grad:p.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{isDone?"✓":p.emoji}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:12,color:p.color,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{p.name} · Rung {st.ladder[pid].rung+1}/5</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:isDone?"#bbb":"#333",lineHeight:1.4,textDecoration:isDone?"line-through":"none"}}>{selected||"No habit selected yet"}</div>
-                    </div>
-                  </div>;
-                })}
-                {done3<activePids.length&&<button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Continue Check-In →</button>}
-              </div>
-            )}
-
-            {st.tab==="pillars"&&(
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {PIDS.map((pid,i)=>{
-                  const p=PILLARS[pid]; const score=st.scores[pid]||0; const ladder=st.ladder[pid];
-                  const stars="⭐".repeat(ladder.rung+1)+"☆".repeat(4-ladder.rung);
-                  return <div key={pid} className="fu" style={{...S.card,border:`1.5px solid ${score?p.border:"#f0f0f0"}`,animationDelay:`${i*0.05}s`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
-                      <div style={{width:42,height:42,borderRadius:12,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:`0 4px 12px ${p.color}33`,flexShrink:0}}>{p.emoji}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>
-                        {stars} · {ladder.days} days on this habit
-                        {ladder.rung<4&&(canLevelUp(st.ladder,pid)
-                          ? <span style={{color:"#8B5CF6",fontWeight:600}}> · Ready to level up! 🔓</span>
-                          : <span> · {daysToLevelUp(st.ladder,pid)}d to next rung</span>
-                        )}
-                      </div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:22,color:p.color}}>{score||"–"}{score?"/4":""}</div>
-                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#bbb"}}>Rung {ladder.rung+1}/5</div>
-                      </div>
-                    </div>
-                    <div style={{background:"#f5f5f5",borderRadius:6,height:5,overflow:"hidden"}}>
-                      <div style={{height:"100%",borderRadius:6,background:p.grad,width:`${((ladder.rung+1)/5)*100}%`,transition:"width 0.6s ease"}}/>
-                    </div>
-                    {ladder.selected&&<p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#888",marginTop:10,lineHeight:1.5,fontStyle:"italic"}}>"{ladder.selected}"</p>}
-                  </div>;
-                })}
-                <div style={{display:"flex",gap:10,marginTop:4}}>
-                  <button className="tap" onClick={()=>{update({qIndex:0,qAnswers:{},scores:{},ladder:Object.fromEntries(PIDS.map(pid=>[pid,{rung:0,habits:[],days:0,selected:null}]))});goTo("questionnaire");}} style={{...S.btnGhost,flex:2}}>📋 Re-take Assessment</button>
-                  <button className="tap" onClick={resetApp} style={{flex:1,padding:"14px",borderRadius:14,border:"1.5px solid #fee2e2",background:"white",color:"#ef4444",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,cursor:"pointer"}}>🔄 Reset</button>
-                </div>
-              </div>
-            )}
-
-            {st.tab==="brain"&&(
-              <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                <button onClick={()=>goTo("weekly_report_full")}
-                  style={{...S.btn("linear-gradient(135deg,#6D28D9,#8B5CF6)","0 8px 24px #6D28D944"),padding:"16px",fontSize:14}}>
-                  📊 Generate Weekly Intelligence Report →
-                </button>
-                {(()=>{
-                  const totalDays = (st.history||[]).length;
-                  const daysLeft = Math.max(0, 30 - totalDays);
-                  const canGenerate = totalDays >= 30;
-                  return canGenerate ? (
-                    <button onClick={()=>goTo("monthly_letter")}
-                      style={{...S.btn("linear-gradient(135deg,#0f0f0f,#2d2d2d)","0 8px 24px #0003"),padding:"14px",fontSize:13}}>
-                      ✉️ Read My Monthly Progress Letter →
-                    </button>
-                  ) : (
-                    <div style={{padding:"14px 16px",borderRadius:16,background:"#f8f8f8",border:"1.5px solid #e8e8e8",textAlign:"center"}}>
-                      <div style={{fontSize:22,marginBottom:4}}>✉️</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",fontWeight:600,marginBottom:2}}>Monthly Progress Letter</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Unlocks after 30 days · {totalDays}/30 active · {daysLeft} to go</div>
-                    </div>
-                  );
-                })()}
-                <button onClick={()=>goTo("next_week_plan")}
-                  style={{...S.btn("linear-gradient(135deg,#10B981,#0EA5E9)","0 8px 24px #10B98144"),padding:"14px",fontSize:13}}>
-                  🎯 Smart Next Week Plan →
-                </button>
-                <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} />
-              </div>
-            )}
-
-            {st.tab==="impact"&&(
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                <button className="tap" onClick={()=>update({showWeeklyCheckin:true,tab:"today"})} style={S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 8px 24px #8B5CF644")}>
-                  📊 Take This Week's Check-in
-                </button>
-                {!st.impactHistory?.length ? (
-                  <div style={{textAlign:"center",padding:"48px 20px"}}>
-                    <div style={{fontSize:44,marginBottom:12}}>📈</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#bbb",fontSize:14,lineHeight:1.7}}>No impact data yet.<br/>Your first weekly check-in appears every Saturday.</p>
-                  </div>
-                ):[...st.impactHistory].reverse().map((entry,i)=>(
-                  <div key={i} style={S.card}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0f0f0f"}}>Week of {entry.date}</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#10B981",fontWeight:600}}>🔥 {entry.streak} streak</div>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {Object.entries(entry.answers).map(([pid,ans])=>{
-                        const p=PILLARS[pid];
-                        const iq=IMPACT_QUESTIONS[pid];
-                        const opt=iq?.options[ans];
-                        if (!p||!opt) return null;
-                        return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:10}}>
-                            <span style={{fontSize:16}}>{p.emoji}</span>
-                            <div style={{flex:1}}>
-                              <div style={{background:"#f5f5f5",borderRadius:4,height:4,overflow:"hidden"}}>
-                                <div style={{height:"100%",borderRadius:4,background:p.grad,width:`${((ans+1)/4)*100}%`}}/>
-                              </div>
-                            </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:600,width:70,textAlign:"right"}}>{opt.emoji} {opt.label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {st.tab==="history"&&(
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                {st.history.length===0?(
-                  <div style={{textAlign:"center",padding:"48px 20px"}}>
-                    <div style={{fontSize:44,marginBottom:12}}>📅</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#bbb",fontSize:14,lineHeight:1.7}}>No history yet.<br/>Complete your first check-in to start tracking.</p>
-                  </div>
-                ):[...st.history].reverse().map((entry,i)=>(
-                  <div key={i} style={S.card}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:"#0f0f0f"}}>{entry.day}</div>
-                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#10B981",fontWeight:600}}>🔥 {entry.streak}</div>
-                    </div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {entry.pillars.map(pid=>{
-                        const p=PILLARS[pid];
-                        return p?<div key={pid} style={{background:p.light,border:`1px solid ${p.border}`,borderRadius:8,padding:"4px 10px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:500}}>{p.emoji} {p.name}</div>:null;
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(250,250,248,0.94)",backdropFilter:"blur(16px)",borderTop:"1px solid #eeece8",padding:"10px 24px",display:"flex",justifyContent:"space-around",zIndex:100}}>
-              {[{icon:"🏠",label:"Home",action:()=>goTo("habits")},{icon:"📚",label:"Explore",action:()=>goTo("explore")},{icon:"🎯",label:"Pillars",action:()=>{update({tab:"pillars"});goTo("dashboard");}},{icon:"📊",label:"Dashboard",action:()=>{update({tab:"today"});goTo("dashboard");}}].map(item=>(
-                <button key={item.label} className="tap" onClick={item.action} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 10px"}}>
-                  <span style={{fontSize:22}}>{item.icon}</span>
-                  <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:9,color:"#aaa",letterSpacing:0.5,textTransform:"uppercase"}}>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
