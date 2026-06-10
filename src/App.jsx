@@ -3854,12 +3854,14 @@ export default function App() {
   useEffect(()=>{
     if (st.screen !== "habits") return;
     const activePids2 = st.selectedPillars || getWeakest3();
-    activePids2.forEach(pid => {
+    activePids2.forEach((pid, i) => {
       const ladder = st.ladder?.[pid] || {};
-      const activeHabit = (ladder.habits||[]).find(h => !h.mastered);
+      // Try active habit first, fall back to selected habit
+      const activeHabit = (ladder.habits||[]).find(h => !h.mastered) 
+        || (ladder.selected ? {habit: ladder.selected, checkins: ladder.days||0} : null);
       if (activeHabit?.habit) {
-        setTimeout(() => fetchMicroChallenge(pid), 500);
-      }
+        setTimeout(() => fetchMicroChallenge(pid), 300 + i * 200);
+      // No habit selected yet — nothing to show
     });
   },[st.screen]);
 
@@ -3998,7 +4000,9 @@ export default function App() {
           [pid]: { text: res.challenge, date: today }
         }));
       }
-    } catch(e) {}
+    } catch(e) {
+      // AI unavailable — show nothing, habit card works fine without it
+    }
   };
 
   // Build rung context for AI coaches
@@ -5372,11 +5376,18 @@ export default function App() {
                                   {canUnlock&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:700}}>🔓 Ready!</span>}
                                 </div>
 
-                                {/* AI Micro-challenge */}
-                                {!isDone && microChallenges[pid]?.text && (
-                                  <div style={{padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,#F0FDF4,#EFF6FF)",border:"1px solid #BBF7D0",marginBottom:10}}>
-                                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:"#059669",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>🧠 Today's focus</div>
-                                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#374151",lineHeight:1.6,margin:0}}>{microChallenges[pid].text}</p>
+                                {/* AI Micro-challenge — shows before and after check-in */}
+                                {microChallenges[pid]?.text && (
+                                  <div style={{
+                                    padding:"10px 12px",borderRadius:12,
+                                    background:isDone?"rgba(0,0,0,0.03)":"linear-gradient(135deg,#F0FDF4,#EFF6FF)",
+                                    border:`1px solid ${isDone?"#e8e8e8":"#BBF7D0"}`,
+                                    marginBottom:10,
+                                    opacity:isDone?0.6:1,
+                                    transition:"all 0.3s"
+                                  }}>
+                                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:isDone?"#aaa":"#059669",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>🧠 {isDone?"Today's focus — done":"Today's focus"}</div>
+                                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:isDone?"#aaa":"#374151",lineHeight:1.6,margin:0}}>{microChallenges[pid].text}</p>
                                   </div>
                                 )}
 
