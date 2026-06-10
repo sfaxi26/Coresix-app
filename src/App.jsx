@@ -621,7 +621,6 @@ const initState = () => ({
   weeklyImpact:{}, impactHistory:[],
   showWeeklyCheckin:false,
   selectedPillars:null,
-  maintainedPillars:[], // pillars being maintained (not actively built)
   coachingRead: {},
   morningIdx:0,
   fuel:{
@@ -667,7 +666,11 @@ const migrateState = (s) => {
   if (!s.move) s.move = {stepGoal:7000,stepsToday:0,stepsDate:"",workouts:[]};
   if (!s.rest) s.rest = {bedtime:"",wakeTime:"",sleepDate:"",quality:0,windDown:[],sleepHistory:[]};
   if (!s.calm) s.calm = {stressLevel:0,mood:"",gratitude:[],breathingDone:false,meditationMins:0,calmActivities:[],calmDate:""};
-  if (!s.maintainedPillars) s.maintainedPillars = [];
+  // Enforce always exactly 3 active pillars
+  if (s.selectedPillars && s.selectedPillars.length > 3) {
+    s.selectedPillars = s.selectedPillars.slice(0, 3);
+  }
+  s.maintainedPillars = []; // Clear maintained — always exactly 3 active
   // Ensure ALL pillars have ladder entries
   const PIDS_LIST = ["fuel","move","rest","calm","connect","focus"];
   if (!s.ladder) s.ladder = {};
@@ -3742,6 +3745,7 @@ export default function App() {
   const [confetti, setConfetti] = useState([]);
   const [writeOwn, setWriteOwn] = useState({show:false,pid:null,val:"",reason:""});
   const [showMoreHabits, setShowMoreHabits] = useState({}); // {pid: true/false}
+  const [microChallenges, setMicroChallenges] = useState({}); // {pid: {text, date}}
   const [showAddPillar, setShowAddPillar] = useState(null); // {triggeredBy: 'levelup'|'weeks', pid}
   const [weeklyStep, setWeeklyStep] = useState(0);
   const [showChangePillars, setShowChangePillars] = useState(false);
@@ -3846,13 +3850,26 @@ export default function App() {
     if (st.screen==="splash") setTimeout(()=>goTo("welcome"),2200);
   },[]);
 
+  // Fetch micro-challenges when on habits screen
+  useEffect(()=>{
+    if (st.screen !== "habits") return;
+    const activePids2 = st.selectedPillars || getWeakest3();
+    activePids2.forEach(pid => {
+      const ladder = st.ladder?.[pid] || {};
+      const activeHabit = (ladder.habits||[]).find(h => !h.mastered);
+      if (activeHabit?.habit) {
+        setTimeout(() => fetchMicroChallenge(pid), 500);
+      }
+    });
+  },[st.screen]);
+
   // Check if person has been on same pillars for 4+ weeks
   useEffect(()=>{
     if (!st.selectedPillars || st.streak < 28) return;
     const lastRotation = localStorage.getItem("coresix_last_rotation");
     const currentWeek = Math.floor(st.streak / 7);
     const lastRotationWeek = lastRotation ? parseInt(lastRotation) : 0;
-    if (currentWeek - lastRotationWeek >= 4 && (st.selectedPillars||[]).length < 6) {
+    if (currentWeek - lastRotationWeek >= 4 && (st.selectedPillars||[]).length >= 3) {
       const shown = localStorage.getItem("coresix_rotation_nudge_week");
       if (shown !== String(currentWeek)) {
         localStorage.setItem("coresix_rotation_nudge_week", String(currentWeek));
@@ -3948,6 +3965,41 @@ export default function App() {
 
   // Clean habit display — strips [reason: ...] tag for UI display
   const displayHabit = (habit) => habit ? habit.replace(/\s*\[reason:.*?\]$/i, '').trim() : habit;
+
+  // Fetch AI micro-challenge for a habit
+  const fetchMicroChallenge = async (pid) => {
+    const id = localStorage.getItem("coresix_device_id");
+    if (!id) return;
+    const today = new Date().toISOString().slice(0,10);
+    // Return cached version if already fetched today
+    if (microChallenges[pid]?.date === today) return;
+    const ladder = st.ladder?.[pid] || {};
+    const habits = ladder.habits || [];
+    const activeHabit = habits.find(h => !h.mastered) || habits[habits.length-1];
+    if (!activeHabit?.habit) return;
+    const checkinDay = Math.min(5, (activeHabit.checkins || 0) + 1);
+    const p = PILLARS[pid];
+    try {
+      const res = await api("POST", "/api/micro-challenge", {
+        deviceId: id,
+        pid,
+        habit: activeHabit.habit,
+        habitReason: activeHabit.habit.includes("[reason:") 
+          ? activeHabit.habit.match(/\[reason: ([^\]]+)\]/)?.[1] 
+          : null,
+        checkinDay,
+        rungName: LADDER[pid]?.[ladder.rung||0]?.title || "Foundation",
+        pillarName: p?.name || pid,
+        lastImpact: (st.weeklyImpact||{})[pid],
+      });
+      if (res?.challenge) {
+        setMicroChallenges(prev => ({
+          ...prev,
+          [pid]: { text: res.challenge, date: today }
+        }));
+      }
+    } catch(e) {}
+  };
 
   // Build rung context for AI coaches
   const buildRungContext = (pid) => {
@@ -4201,11 +4253,12 @@ export default function App() {
         const newLadder = {...st.ladder,[pid]:{...st.ladder[pid],rung:rung+1,days:0,selected:null,habits:[]}};
         const newScores = {...st.scores,[pid]:newScore};
         update({ladder:newLadder, scores:newScores});
-        // Offer to add a new pillar if less than 6 active
+        // Offer pillar swap if 3+ active pillars
         const activePillars = st.selectedPillars || getWeakest3();
-        if (activePillars.length < 6) {
+        if (activePillars.length >= 3) {
           setShowAddPillar({triggeredBy:'levelup', pid});
         } else {
+          // Less than 3 — just add directly without swap
           goTo(`pick_${pid}`);
         }
       },
@@ -4375,12 +4428,12 @@ export default function App() {
                   {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
                 </div>
                 <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
-                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
+                  {isLevelUp ? "Time to rotate pillars?" : "Time to rotate pillars?"}
                 </div>
                 <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
                   {isLevelUp
-                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
-                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
+                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. Pick one pillar to maintain — your habit continues but with less focus — then add a new one to build.`
+                    : `You've been building the same 3 pillars for 4 weeks. Pick one to maintain and bring in something new. Always 3 active pillars.`
                   }
                 </p>
               </div>
@@ -4403,16 +4456,14 @@ export default function App() {
 
               {/* Step 1: Pick which active pillar to maintain */}
               {(()=>{
-                // Using closure variables instead of hooks (can't use hooks inside render fn)
+                // Simple swap — remove one, add one, always 3
                 const swapStep = showAddPillar.step || 1;
-                const pillarToMaintain = showAddPillar.maintain || null;
-                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
-                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
+                const pillarOut = showAddPillar.maintain || null;
 
                 if (swapStep === 1) return (
                   <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Step 1 of 2 — Remove</div>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar do you want to step back from?</p>
                     <div style={{display:"flex",flexDirection:"column",gap:8}}>
                       {activePillars.map(pid=>{
                         const p = PILLARS[pid];
@@ -4420,14 +4471,14 @@ export default function App() {
                         const rung = (ladder.rung||0)+1;
                         const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
                         return (
-                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
+                          <button key={pid} className="tap" onClick={()=>setShowAddPillar({...showAddPillar, maintain:pid, step:2})}
                             style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
                             <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
                             <div style={{flex:1}}>
                               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 mastered</div>
                             </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#EF4444",background:"#FEF2F2",borderRadius:6,padding:"3px 8px",fontWeight:600}}>Remove</span>
                           </button>
                         );
                       })}
@@ -4435,44 +4486,41 @@ export default function App() {
                   </div>
                 );
 
-                // Step 2: Pick new pillar to add
                 return (
                   <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
-                    {pillarToMaintain && (
-                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Step 2 of 2 — Add</div>
+                    {pillarOut && (
+                      <div style={{padding:"8px 12px",borderRadius:10,background:"#FEF2F2",border:"1px solid #FECACA",marginBottom:12}}>
+                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#EF4444"}}>✕ {PILLARS[pillarOut]?.name} removed</span>
                       </div>
                     )}
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
+                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar do you want to work on instead?</p>
                     <div style={{display:"flex",flexDirection:"column",gap:8}}>
                       {inactivePillars.map(pid=>{
                         const p = PILLARS[pid];
-                        const score = st.scores[pid] || 1;
+                        const score = st.scores?.[pid] || 1;
                         const scoreLabels = ["Needs work","Developing","Good","Excellent"];
                         return (
                           <button key={pid} className="tap" onClick={()=>{
-                            // Swap: maintain old, add new
-                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
-                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
-                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
+                            const newActive = activePillars.filter(p=>p!==pillarOut).concat([pid]).slice(0,3);
+                            update({selectedPillars: newActive});
                             localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
                             setShowAddPillar(null);
-                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
+                            showToast(`✅ ${p.name} in · ${PILLARS[pillarOut]?.name} out`, "#10B981");
                             if (currentPid) goTo(`pick_${pid}`);
                             else goTo("habits");
                           }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
                             <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
                             <div style={{flex:1}}>
                               <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
+                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · {scoreLabels[(score-1)||0]}</div>
                             </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
+                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Add →</span>
                           </button>
                         );
                       })}
                     </div>
-                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
+                    <button onClick={()=>setShowAddPillar({...showAddPillar,step:1})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
                   </div>
                 );
               })()}
@@ -4616,141 +4664,7 @@ export default function App() {
       
       
 
-      {/* ── ADD PILLAR OVERLAY ── */}
-      {showAddPillar && (()=>{
-        const activePillars = st.selectedPillars || getWeakest3();
-        const inactivePillars = PIDS.filter(p => !activePillars.includes(p));
-        const isLevelUp = showAddPillar.triggeredBy === 'levelup';
-        const isWeeks = showAddPillar.triggeredBy === 'weeks';
-        const currentPid = showAddPillar.pid;
-
-        return (
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:380,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
-            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"85vh",overflowY:"auto"}}>
-
-              {/* Header */}
-              <div style={{marginBottom:20}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>
-                  {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
-                </div>
-                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
-                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
-                </div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
-                  {isLevelUp
-                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
-                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
-                  }
-                </p>
-              </div>
-
-              {/* Current pillars */}
-              <div style={{marginBottom:16}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Currently working on</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {activePillars.map(pid=>{
-                    const p = PILLARS[pid];
-                    return (
-                      <div key={pid} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:p.light,border:`1px solid ${p.border}`}}>
-                        <span>{p.emoji}</span>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>{p.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 1: Pick which active pillar to maintain */}
-              {(()=>{
-                // Using closure variables instead of hooks (can't use hooks inside render fn)
-                const swapStep = showAddPillar.step || 1;
-                const pillarToMaintain = showAddPillar.maintain || null;
-                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
-                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
-
-                if (swapStep === 1) return (
-                  <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {activePillars.map(pid=>{
-                        const p = PILLARS[pid];
-                        const ladder = st.ladder?.[pid]||{};
-                        const rung = (ladder.rung||0)+1;
-                        const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
-                        return (
-                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
-                            style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
-                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
-                            </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-
-                // Step 2: Pick new pillar to add
-                return (
-                  <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
-                    {pillarToMaintain && (
-                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
-                      </div>
-                    )}
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {inactivePillars.map(pid=>{
-                        const p = PILLARS[pid];
-                        const score = st.scores[pid] || 1;
-                        const scoreLabels = ["Needs work","Developing","Good","Excellent"];
-                        return (
-                          <button key={pid} className="tap" onClick={()=>{
-                            // Swap: maintain old, add new
-                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
-                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
-                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
-                            localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
-                            setShowAddPillar(null);
-                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
-                            if (currentPid) goTo(`pick_${pid}`);
-                            else goTo("habits");
-                          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
-                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
-                            </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
-                  </div>
-                );
-              })()}
-
-              {/* Actions */}
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <button className="tap" onClick={()=>{
-                  setShowAddPillar(null);
-                  if (currentPid) goTo(`pick_${currentPid}`);
-                  else goTo("habits");
-                }} style={S.btnGhost}>
-                  {isLevelUp ? `Continue with Rung ${(st.ladder?.[currentPid]?.rung||0)+2} →` : "Keep my current pillars"}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
+      
       {/* ── MINI ASSESSMENT OVERLAY ── */}
       {miniAssessment && (()=>{
         const { pid, step, answers, rung } = miniAssessment;
@@ -4875,141 +4789,7 @@ export default function App() {
       
       
 
-      {/* ── ADD PILLAR OVERLAY ── */}
-      {showAddPillar && (()=>{
-        const activePillars = st.selectedPillars || getWeakest3();
-        const inactivePillars = PIDS.filter(p => !activePillars.includes(p));
-        const isLevelUp = showAddPillar.triggeredBy === 'levelup';
-        const isWeeks = showAddPillar.triggeredBy === 'weeks';
-        const currentPid = showAddPillar.pid;
-
-        return (
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:380,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(8px)"}}>
-            <div style={{width:"100%",maxWidth:430,background:"white",borderRadius:"28px 28px 0 0",padding:"28px 22px 48px",animation:"slideUp 0.4s cubic-bezier(0.16,1,0.3,1)",maxHeight:"85vh",overflowY:"auto"}}>
-
-              {/* Header */}
-              <div style={{marginBottom:20}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#10B981",letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>
-                  {isLevelUp ? "🔓 Rung Complete!" : "⏰ 4 Weeks In"}
-                </div>
-                <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:22,color:"#0f0f0f",marginBottom:8}}>
-                  {isLevelUp ? "Ready to expand?" : "Time to add a new pillar?"}
-                </div>
-                <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#888",lineHeight:1.6}}>
-                  {isLevelUp
-                    ? `You've levelled up in ${currentPid ? PILLARS[currentPid].name : "this pillar"}. The foundation is solid. You can go deeper — or bring in a new area of your life.`
-                    : `You've been building the same 3 pillars for 4 weeks. That's real consistency. CoreSix thinks you might be ready to expand.`
-                  }
-                </p>
-              </div>
-
-              {/* Current pillars */}
-              <div style={{marginBottom:16}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Currently working on</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {activePillars.map(pid=>{
-                    const p = PILLARS[pid];
-                    return (
-                      <div key={pid} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:p.light,border:`1px solid ${p.border}`}}>
-                        <span>{p.emoji}</span>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>{p.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 1: Pick which active pillar to maintain */}
-              {(()=>{
-                // Using closure variables instead of hooks (can't use hooks inside render fn)
-                const swapStep = showAddPillar.step || 1;
-                const pillarToMaintain = showAddPillar.maintain || null;
-                const setSwapStep = (s) => setShowAddPillar({...showAddPillar, step:s});
-                const setPillarToMaintain = (p) => setShowAddPillar({...showAddPillar, maintain:p});
-
-                if (swapStep === 1) return (
-                  <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 1 of 2</div>
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which pillar is strong enough to maintain on its own? It will stay in your habits but with less active focus.</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {activePillars.map(pid=>{
-                        const p = PILLARS[pid];
-                        const ladder = st.ladder?.[pid]||{};
-                        const rung = (ladder.rung||0)+1;
-                        const mastered = (ladder.habits||[]).filter(h=>h.mastered).length;
-                        return (
-                          <button key={pid} className="tap" onClick={()=>{setPillarToMaintain(pid);setSwapStep(2);}}
-                            style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:"1.5px solid #f0f0f0",background:"white",cursor:"pointer",textAlign:"left"}}>
-                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 habits mastered</div>
-                            </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#10B981",background:"#ECFDF5",borderRadius:6,padding:"2px 8px",fontWeight:600}}>Maintain →</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-
-                // Step 2: Pick new pillar to add
-                return (
-                  <div style={{marginBottom:20}}>
-                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>Step 2 of 2</div>
-                    {pillarToMaintain && (
-                      <div style={{padding:"8px 12px",borderRadius:10,background:"#ECFDF5",border:"1px solid #A7F3D0",marginBottom:12}}>
-                        <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#065F46"}}>✓ {PILLARS[pillarToMaintain].name} will be maintained</span>
-                      </div>
-                    )}
-                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#555",marginBottom:12,lineHeight:1.5}}>Which new pillar do you want to actively build?</p>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {inactivePillars.map(pid=>{
-                        const p = PILLARS[pid];
-                        const score = st.scores[pid] || 1;
-                        const scoreLabels = ["Needs work","Developing","Good","Excellent"];
-                        return (
-                          <button key={pid} className="tap" onClick={()=>{
-                            // Swap: maintain old, add new
-                            const newActive = activePillars.filter(p=>p!==pillarToMaintain).concat([pid]);
-                            const newMaintained = [...(st.maintainedPillars||[]).filter(p=>p!==pid), pillarToMaintain];
-                            update({selectedPillars: newActive, maintainedPillars: newMaintained});
-                            localStorage.setItem("coresix_last_rotation", String(Math.floor(st.streak/7)));
-                            setShowAddPillar(null);
-                            showToast(`✅ ${p.name} added · ${PILLARS[pillarToMaintain]?.name} now on maintain`, "#10B981");
-                            if (currentPid) goTo(`pick_${pid}`);
-                            else goTo("habits");
-                          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:16,border:`1.5px solid ${p.border}`,background:p.light,cursor:"pointer",textAlign:"left"}}>
-                            <div style={{width:40,height:40,borderRadius:11,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{p.emoji}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:14,color:"#0f0f0f"}}>{p.name}</div>
-                              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>{p.desc} · Assessment: {scoreLabels[(score-1)||0]}</div>
-                            </div>
-                            <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:p.color,fontWeight:600}}>Build →</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button onClick={()=>setShowAddPillar({...showAddPillar, step:1, maintain:null})} style={{width:"100%",padding:"10px",marginTop:8,borderRadius:12,border:"1.5px solid #e8e8e8",background:"transparent",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,cursor:"pointer"}}>← Back</button>
-                  </div>
-                );
-              })()}
-
-              {/* Actions */}
-              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                <button className="tap" onClick={()=>{
-                  setShowAddPillar(null);
-                  if (currentPid) goTo(`pick_${currentPid}`);
-                  else goTo("habits");
-                }} style={S.btnGhost}>
-                  {isLevelUp ? `Continue with Rung ${(st.ladder?.[currentPid]?.rung||0)+2} →` : "Keep my current pillars"}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
+      
       {/* ── MINI ASSESSMENT OVERLAY ── */}
       {miniAssessment && (()=>{
         const { pid, step, answers } = miniAssessment;
@@ -5473,39 +5253,7 @@ export default function App() {
               <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#92400E",lineHeight:1.65,fontStyle:"italic"}}>{morningWisdom}</p>
             </div>
 
-            {/* Maintained pillars */}
-            {(st.maintainedPillars||[]).length > 0 && (
-              <div style={{marginBottom:4}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Maintaining</div>
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {(st.maintainedPillars||[]).map(pid=>{
-                    const p = PILLARS[pid];
-                    const ladder = st.ladder?.[pid]||{};
-                    const isDone = st.checkedToday?.[pid];
-                    return (
-                      <div key={pid} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:14,background:isDone?p.light:"#f8f8f8",border:`1px solid ${isDone?p.border:"#eee"}`}}>
-                        <div style={{width:34,height:34,borderRadius:10,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0,opacity:0.8}}>{p.emoji}</div>
-                        <div style={{flex:1}}>
-                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:isDone?p.color:"#555"}}>{p.name}</div>
-                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{st.ladder?.[pid]?.selected ? `"${displayHabit(st.ladder[pid].selected)}"` : "No habit selected"}</div>
-                        </div>
-                        {isDone
-                          ? <span style={{fontSize:16}}>✅</span>
-                          : <button className="tap" onClick={()=>handleCheckIn(pid)} style={{padding:"6px 12px",borderRadius:10,border:`1px solid ${p.border}`,background:p.light,color:p.color,fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:600,cursor:"pointer"}}>Done</button>
-                        }
-                        <button className="tap" onClick={()=>{
-                          // Move back to active
-                          const newActive = [...(st.selectedPillars||getWeakest3()), pid];
-                          const newMaintained = (st.maintainedPillars||[]).filter(p=>p!==pid);
-                          update({selectedPillars:newActive, maintainedPillars:newMaintained});
-                          showToast(`${p.name} moved back to active building`, p.color);
-                        }} style={{padding:"4px 8px",borderRadius:8,border:"1px solid #e8e8e8",background:"white",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,cursor:"pointer"}}>↑ Build</button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+
 
             {/* Daily quote — shows periodically */}
             {st.streak % 3 === 0 && st.streak >= 3 && (()=>{
@@ -5521,16 +5269,16 @@ export default function App() {
               );
             })()}
 
-            {/* Predictive Warnings — only show after 7+ days */}
-            {st.streak >= 7 && st.history?.length >= 7 && warnings.filter(w=>w.severity!=="positive").slice(0,1).map((w,i)=>(
-              <div key={i} style={{background:w.severity==="high"?"linear-gradient(135deg,#FEF2F2,white)":"linear-gradient(135deg,#FFFBEB,white)",borderRadius:16,padding:"14px 16px",border:`1.5px solid ${w.severity==="high"?"#FECACA":"#FDE68A"}`,display:"flex",gap:10,alignItems:"flex-start"}}>
-                <span style={{fontSize:18,flexShrink:0}}>{w.icon}</span>
+            {/* Motivational nudges — only after 7+ days and not when 100% today */}
+            {st.streak >= 7 && st.history?.length >= 7 && pct < 100 && warnings.filter(w=>w.severity!=="positive").slice(0,1).map((w,i)=>(
+              <div key={i} style={{background:"linear-gradient(135deg,#F0FDF4,white)",borderRadius:16,padding:"14px 16px",border:"1.5px solid #BBF7D0",display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{w.icon||"💪"}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:w.severity==="high"?"#EF4444":"#F59E0B",marginBottom:4}}>{w.title}</div>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6,marginBottom:6}}>{w.message}</div>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:w.severity==="high"?"#EF4444":"#F59E0B",fontWeight:600}}>→ {w.suggestion}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#059669",marginBottom:3}}>{w.title}</div>
+                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6,marginBottom:4}}>{w.message}</div>
+                  {w.suggestion&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#059669",fontWeight:600}}>→ {w.suggestion}</div>}
                 </div>
-                <button onClick={()=>setWarnings(prev=>prev.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",color:"#ddd",cursor:"pointer",fontSize:16,flexShrink:0}}>✕</button>
+                <button onClick={()=>setWarnings(prev=>prev.filter((_,idx)=>idx!==i))} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",color:"#ccc",flexShrink:0}}>✕</button>
               </div>
             ))}
 
@@ -5623,6 +5371,14 @@ export default function App() {
                                   <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>{masteredCount}/3 habits mastered · Rung {ladder.rung+1}/5</span>
                                   {canUnlock&&<span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:p.color,fontWeight:700}}>🔓 Ready!</span>}
                                 </div>
+
+                                {/* AI Micro-challenge */}
+                                {!isDone && microChallenges[pid]?.text && (
+                                  <div style={{padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,#F0FDF4,#EFF6FF)",border:"1px solid #BBF7D0",marginBottom:10}}>
+                                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:"#059669",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>🧠 Today's focus</div>
+                                    <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#374151",lineHeight:1.6,margin:0}}>{microChallenges[pid].text}</p>
+                                  </div>
+                                )}
 
                                 {/* Check in */}
                                 {!isDone&&(
