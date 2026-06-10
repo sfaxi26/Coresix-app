@@ -4248,9 +4248,7 @@ export default function App() {
         ? `${p.emoji} Your ${p.name} score improved! ${oldScore}/4 → ${newScore}/4`
         : `${p.emoji} Rung ${rung+1} Complete!`,
       (improved
-        ? `Real growth is happening. Your ${p.name} score moved from ${oldScore}/4 to ${newScore}/4 — that is not a number. That is who you are becoming.
-
-`
+        ? `Real growth is happening. Your ${p.name} score moved from ${oldScore}/4 to ${newScore}/4.`
         : "") + unlockMsg,
       ()=>{
         setShowCoach(null);
