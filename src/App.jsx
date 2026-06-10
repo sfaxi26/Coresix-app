@@ -3966,7 +3966,7 @@ export default function App() {
   };
 
   // Clean habit display — strips [reason: ...] tag for UI display
-  const displayHabit = (habit) => habit ? habit.replace(/\s*\[reason:.*?\]$/i, '').trim() : habit;
+  const displayHabit = (habit) => habit ? habit.split('[reason:')[0].trim() : habit;
 
   // Fetch AI micro-challenge for a habit
   const fetchMicroChallenge = async (pid) => {
@@ -3987,7 +3987,7 @@ export default function App() {
         pid,
         habit: activeHabit.habit,
         habitReason: activeHabit.habit.includes("[reason:") 
-          ? activeHabit.habit.match(/\[reason: ([^\]]+)\]/)?.[1] 
+          ? activeHabit.habit.split("[reason:")[1]?.replace("]","")?.trim() 
           : null,
         checkinDay,
         rungName: LADDER[pid]?.[ladder.rung||0]?.title || "Foundation",
