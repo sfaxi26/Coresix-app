@@ -3756,8 +3756,6 @@ export default function App() {
   const [weeklyAnswers, setWeeklyAnswers] = useState({});
   const [showCoach, setShowCoach] = useState(null); // {title, message, onContinue}
   const [toast, setToast] = useState(null); // {message, color}
-  const [lastQPid, setLastQPid] = useState(null);
-
   const stage = getStage(st.streak);
 
   const getWeekKey = () => {
@@ -3856,14 +3854,12 @@ export default function App() {
     const activePids2 = st.selectedPillars || getWeakest3();
     activePids2.forEach((pid, i) => {
       const ladder = st.ladder?.[pid] || {};
-      // Try active habit first, fall back to selected habit
-      const activeHabit = (ladder.habits||[]).find(h => !h.mastered) 
+      const activeHabit = (ladder.habits||[]).find(h => !h.mastered)
         || (ladder.selected ? {habit: ladder.selected, checkins: ladder.days||0} : null);
       if (activeHabit?.habit) {
         setTimeout(() => fetchMicroChallenge(pid), 300 + i * 200);
-      // No habit selected yet — nothing to show
+      }
     });
-  },[st.screen]);
 
   // Check if person has been on same pillars for 4+ weeks
   useEffect(()=>{
