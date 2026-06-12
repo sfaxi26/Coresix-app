@@ -434,50 +434,6 @@ const LADDER = {
 };
 
 // ── MINI REASSESSMENT QUESTIONS ─────────────────────────
-const MINI_ASSESSMENT = {
-  fuel: [
-    { q:"How would you describe your eating habits now compared to when you started?", options:["Still the same","Slightly more structured","Noticeably better","Much more intentional"] },
-    { q:"How is your energy throughout the day?", options:["Same as before","A little more stable","Noticeably better","Much more consistent"] },
-  ],
-  move: [
-    { q:"How active do you feel compared to 7 days ago?", options:["About the same","A little more active","Noticeably more active","Much more active"] },
-    { q:"How does your body feel physically?", options:["Same as before","Slightly better","Noticeably better","Stronger and energised"] },
-  ],
-  rest: [
-    { q:"How is your sleep compared to when you started?", options:["Still struggling","Slightly better","Noticeably improved","Much better"] },
-    { q:"How do you feel when you wake up?", options:["Still tired","A little more rested","Noticeably more rested","Refreshed and ready"] },
-  ],
-  calm: [
-    { q:"How are your stress levels compared to 7 days ago?", options:["Still high","Slightly more manageable","Noticeably calmer","Much calmer"] },
-    { q:"How would you rate your overall mental state?", options:["Same as before","A little more balanced","Noticeably more grounded","Very calm and centred"] },
-  ],
-  connect: [
-    { q:"How connected do you feel to the people around you?", options:["Same as before","Slightly more connected","Noticeably more connected","Much more connected"] },
-    { q:"How intentional have your relationships felt this week?", options:["Same as before","A little more intentional","Noticeably more meaningful","Much deeper"] },
-  ],
-  focus: [
-    { q:"How focused do you feel compared to 7 days ago?", options:["About the same","Slightly more focused","Noticeably more focused","Much sharper"] },
-    { q:"How productive have you been this week?", options:["Same as before","A little more productive","Noticeably more productive","Highly productive"] },
-  ],
-};
-
-const RUNG_MIN_DAYS = [7, 14, 21, 30]; // min days required per rung before level up
-
-const canLevelUp = (ladder, pid) => {
-  const rung = ladder[pid]?.rung || 0;
-  const days = ladder[pid]?.days || 0;
-  const minDays = RUNG_MIN_DAYS[rung] || 7;
-  return days >= minDays && rung < 4;
-};
-
-const daysToLevelUp = (ladder, pid) => {
-  const rung = ladder[pid]?.rung || 0;
-  const days = ladder[pid]?.days || 0;
-  const minDays = RUNG_MIN_DAYS[rung] || 7;
-  return Math.max(0, minDays - days);
-};
-
-// ── MINI PILLAR ASSESSMENTS (after 7 days) ──────────────
 const MINI_ASSESSMENTS = {
   fuel: {
     title: "⚡ Fuel Check-in",
@@ -595,11 +551,7 @@ const IMPACT_QUESTIONS = {
   focus:   { question:"How focused were you this week?",         options:[{emoji:"🌀",label:"Scattered"},{emoji:"😐",label:"Okay"},{emoji:"🎯",label:"Focused"},{emoji:"⚡",label:"In flow"}] },
 };
 
-const IMPACT_TRENDS = ["needs attention ↓","same →","getting better ↑","strong ↑"];
-const IMPACT_LABELS = ["Struggling","Same / Okay","Getting better","Thriving"];
-
 const getStage = s => STAGES.find(st=>s>=st.days[0]&&s<=st.days[1])||STAGES[0];
-const getPillar = id => PILLARS[id];
 const getRand = arr => arr[Math.floor(Math.random()*arr.length)];
 
 const SAVE_KEY = "coresix_v2";
@@ -2930,119 +2882,7 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
 }
 
 
-// ── PILLAR RIPPLE EFFECT COMPONENT ───────────────────────
-function PillarRipple({ ripple, S }) {
-  const PILLARS_CONFIG = {
-    fuel:    { emoji:"⚡", name:"Fuel",    color:"#F59E0B", x:200, y:80  },
-    move:    { emoji:"💪", name:"Move",    color:"#10B981", x:340, y:160 },
-    rest:    { emoji:"😴", name:"Rest",    color:"#8B5CF6", x:300, y:300 },
-    calm:    { emoji:"🧘", name:"Calm",    color:"#0EA5E9", x:140, y:320 },
-    connect: { emoji:"🤝", name:"Connect", color:"#EC4899", x:60,  y:200 },
-    focus:   { emoji:"🎯", name:"Focus",   color:"#F97316", x:160, y:160 },
-  };
 
-  const RIPPLE_CONNECTIONS = {
-    rest:    ["focus","calm","move"],
-    fuel:    ["move","focus"],
-    move:    ["calm","rest"],
-    calm:    ["connect","focus"],
-    connect: ["calm"],
-    focus:   ["fuel","move"],
-  };
-
-  if (!ripple) return null;
-
-  const keystone = ripple.keystone;
-  const keystoneConfig = PILLARS_CONFIG[keystone];
-  const affected = RIPPLE_CONNECTIONS[keystone] || [];
-
-  return (
-    <div style={{...S.card,border:"1.5px solid #DDD6FE",overflow:"hidden"}}>
-      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>🌊 Pillar Ripple Effect</div>
-      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#888",marginBottom:14,lineHeight:1.5}}>
-        Your <strong style={{color:keystoneConfig?.color}}>{keystoneConfig?.emoji} {keystoneConfig?.name}</strong> pillar is influencing the others most this week.
-      </p>
-
-      {/* Visual ripple map */}
-      <div style={{position:"relative",height:380,marginBottom:12}}>
-        <svg width="100%" height="380" viewBox="0 0 400 380" style={{position:"absolute",inset:0}}>
-          {/* Connection lines */}
-          {affected.map(pid=>{
-            const from = keystoneConfig;
-            const to = PILLARS_CONFIG[pid];
-            if (!from||!to) return null;
-            return (
-              <line key={pid}
-                x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                stroke={from.color} strokeWidth="2" strokeDasharray="6,4" opacity="0.4"/>
-            );
-          })}
-          {/* Ripple circles around keystone */}
-          {[40,70,100].map((r,i)=>(
-            <circle key={i} cx={keystoneConfig?.x||200} cy={keystoneConfig?.y||190}
-              r={r} fill="none" stroke={keystoneConfig?.color||"#6D28D9"}
-              strokeWidth="1" opacity={0.15-(i*0.04)}/>
-          ))}
-        </svg>
-
-        {/* Pillar nodes */}
-        {Object.entries(PILLARS_CONFIG).map(([pid, cfg])=>{
-          const isKeystone = pid===keystone;
-          const isAffected = affected.includes(pid);
-          const score = ripple.scores?.[pid];
-          return (
-            <div key={pid} style={{
-              position:"absolute",
-              left:cfg.x-30, top:cfg.y-30,
-              width:60, height:60,
-              borderRadius:"50%",
-              background:isKeystone?cfg.color:isAffected?`${cfg.color}22`:"#f5f5f5",
-              border:`3px solid ${isKeystone?cfg.color:isAffected?cfg.color:"#e8e8e8"}`,
-              display:"flex",alignItems:"center",justifyContent:"center",
-              flexDirection:"column",
-              boxShadow:isKeystone?`0 0 20px ${cfg.color}66`:isAffected?`0 4px 12px ${cfg.color}33`:"none",
-              transition:"all 0.3s",
-              zIndex:2,
-            }}>
-              <span style={{fontSize:isKeystone?22:18}}>{cfg.emoji}</span>
-              {score!==undefined&&(
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:8,fontWeight:700,color:isKeystone?"white":cfg.color,marginTop:1}}>
-                  {Math.round(score*25)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Affected pillars list */}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {affected.map(pid=>{
-          const cfg = PILLARS_CONFIG[pid];
-          return (
-            <div key={pid} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,background:`${cfg.color}11`,border:`1px solid ${cfg.color}33`}}>
-              <span style={{fontSize:18}}>{cfg.emoji}</span>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:cfg.color}}>{cfg.name}</div>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#888"}}>Influenced by {keystoneConfig?.name}</div>
-              </div>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:800,fontSize:16,color:cfg.color}}>
-                {ripple.scores?.[pid]!==undefined?`${Math.round(ripple.scores[pid]*25)}`:"-"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#8B5CF6",marginTop:12,lineHeight:1.6,fontStyle:"italic",padding:"10px 12px",background:"#F5F3FF",borderRadius:10}}>
-        💡 Strengthen {keystoneConfig?.name} and watch these pillars improve automatically.
-      </div>
-    </div>
-  );
-}
-
-
-// ── MONTHLY PROGRESS LETTER ───────────────────────────────
 function MonthlyLetter({ st, goBack, S }) {
   const totalDays = (st.history||[]).length;
   const daysLeft = Math.max(0, 30 - totalDays);
@@ -3273,19 +3113,6 @@ const getDailyQuote = (streak=0) => ALL_QUOTES[(new Date().getDate() + streak) %
 const getPlanQuote  = (streak=0) => ALL_QUOTES[(new Date().getDay() + streak + 5) % ALL_QUOTES.length];
 
 // ── SMART NEXT WEEK PLAN ──────────────────────────────────
-const PLAN_QUOTES = [
-  { quote:"A goal without a plan is just a wish.", author:"Antoine de Saint-Exupéry" },
-  { quote:"Someone is sitting in the shade today because someone planted a tree a long time ago.", author:"Warren Buffett" },
-  { quote:"The secret of getting ahead is getting started.", author:"Mark Twain" },
-  { quote:"You don't rise to the level of your goals. You fall to the level of your systems.", author:"James Clear" },
-  { quote:"Plan your work and work your plan.", author:"Napoleon Hill" },
-  { quote:"By failing to prepare, you are preparing to fail.", author:"Benjamin Franklin" },
-  { quote:"What gets scheduled gets done.", author:"Michael Hyatt" },
-  { quote:"Give me six hours to chop down a tree and I will spend the first four sharpening the axe.", author:"Abraham Lincoln" },
-  { quote:"The time to repair the roof is when the sun is shining.", author:"John F. Kennedy" },
-  { quote:"An hour of planning can save you 10 hours of doing.", author:"Dale Carnegie" },
-];
-
 function NextWeekPlan({ st, goBack, S }) {
   const planQuote = getPlanQuote(st?.streak||0);
   const [loading, setLoading] = useState(false);
