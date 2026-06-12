@@ -1276,7 +1276,7 @@ function MoveLayer({ st, update, S, moveHabit, fetchAIInsight, goToHabits, build
       const done = todayWorkouts.some(w=>["yoga","stretch"].some(k=>w.name.toLowerCase().includes(k)));
       return { goal:"Yoga or stretching", actual:done?"Logged ✓":"Not logged yet", met:done };
     } else if (habit.includes("minute") || habit.includes("min")) {
-      const match = moveHabit.match(/(\d+)/);
+      const match = moveHabit.match(/([0-9]+)/);
       const target = match ? parseInt(match[1]) : 20;
       return { goal:`${target} minutes of movement`, actual:`${totalMinutes} minutes logged`, met:totalMinutes>=target };
     }
@@ -2439,7 +2439,7 @@ function FocusLayer({ st, update, S, focusHabit, fetchAIInsight, goToHabits, bui
       const done = rituals.includes("phone_away")||rituals.includes("notifications");
       return { goal:"Remove distractions", actual: done?"Done ✓":"Not done yet", met: done };
     } else if (habit.includes("deep work") || habit.includes("minute") || habit.includes("hour")) {
-      const match = focusHabit.match(/(\d+)/);
+      const match = focusHabit.match(/([0-9]+)/);
       const target = match ? parseInt(match[1]) : 25;
       return { goal:`${target} min deep work`, actual:`${deepWorkMins} min done`, met: deepWorkMins>=target };
     }
@@ -2788,7 +2788,7 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
     const lines = text.split('\n');
     let current = null;
     lines.forEach(line => {
-      const header = line.match(/^\*\*(.+)\*\*/);
+      const header = line.match(/^[*][*](.+)[*][*]/);
       if (header) {
         if (current) sections.push(current);
         current = { title: header[1], content: [] };
