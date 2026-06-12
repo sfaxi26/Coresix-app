@@ -3467,286 +3467,7 @@ function NextWeekPlan({ st, goBack, S }) {
 
 
 // ── BRAIN PANEL COMPONENT ─────────────────────────────────
-function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatterns, fetchPredictiveNudge, S, impactHistory, ladder, scores }) {
-  const [analytics, setAnalytics] = useState(null);
-  const [crossPatterns, setCrossPatterns] = useState(null);
-  const [nudge, setNudge] = useState(null);
-  const [insight, setInsight] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [insightLoading, setInsightLoading] = useState(false);
-  const [trends, setTrends] = useState(null);
-  const [trendsLoading, setTrendsLoading] = useState(false);
 
-  useEffect(() => {
-    loadAll();
-    loadTrends();
-  }, []);
-
-  const loadAll = async () => {
-    setLoading(true);
-    const [analyticsData, crossData, nudgeData] = await Promise.all([
-      fetchAnalytics(),
-      fetchCrossPatterns ? fetchCrossPatterns() : null,
-      fetchPredictiveNudge ? fetchPredictiveNudge() : null,
-    ]);
-    setAnalytics(analyticsData);
-    setCrossPatterns(crossData);
-    setNudge(nudgeData?.nudge);
-    setLoading(false);
-  };
-
-  const loadAnalytics = loadAll;
-
-  const loadTrends = async () => {
-    if (!deviceId || (impactHistory||[]).length < 2) return;
-    setTrendsLoading(true);
-    try {
-      const res = await fetch("https://coresix-backend-production.up.railway.app/api/trends", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          deviceId,
-          impactHistory: (impactHistory||[]).slice(-8),
-          ladder: ladder||{},
-          scores: scores||{},
-        }),
-      });
-      const data = await res.json();
-      if (data) setTrends(data);
-    } catch(e) {}
-    setTrendsLoading(false);
-  };
-
-
-
-  const getInsight = async () => {
-    setInsightLoading(true);
-    const content = await fetchAIInsight("weekly_insight");
-    setInsight(content || "Keep going. Every habit compounds.");
-    setInsightLoading(false);
-  };
-
-  if (loading) return (
-    <div style={{textAlign:"center",padding:"48px 20px"}}>
-      <div style={{fontSize:32,marginBottom:12,animation:"bobble 1.5s ease-in-out infinite"}}>🧠</div>
-      <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:14}}>Analysing your patterns...</p>
-    </div>
-  );
-
-  if (!analytics) return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      {/* Local summary using props data */}
-      <div style={{...S.card}}>
-        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>Your pillars at a glance</div>
-        {Object.entries(ladder||{}).filter(([pid,l])=>l && (l.rung||0) > 0 || (l.habits||[]).some(h=>h.mastered)).slice(0,3).map(([pid,l])=>{
-          const PNAMES = {fuel:"⚡ Fuel",move:"💪 Move",rest:"😴 Rest",calm:"🧘 Calm",connect:"🤝 Connect",focus:"🎯 Focus"};
-          const mastered = (l.habits||[]).filter(h=>h.mastered).length;
-          const rung = (l.rung||0)+1;
-          return (
-            <div key={pid} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5"}}>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,color:"#0a0a0a"}}>{PNAMES[pid]||pid}</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered} mastered</div>
-            </div>
-          );
-        })}
-        {Object.values(ladder||{}).every(l=>!l||(l.rung||0)===0) && (
-          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",textAlign:"center",padding:"12px 0"}}>Keep building your habits — insights unlock after a few check-ins.</p>
-        )}
-      </div>
-      <button onClick={getInsight} disabled={insightLoading}
-        style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 6px 20px #8B5CF644"),opacity:insightLoading?0.7:1}}>
-        {insightLoading ? "Thinking..." : "Get a General Insight →"}
-      </button>
-      {insight && (
-        <div style={{background:"linear-gradient(135deg,#F5F3FF,white)",borderRadius:16,padding:"18px",border:"1px solid #DDD6FE"}}>
-          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#374151",lineHeight:1.75,fontStyle:"italic"}}>"{insight}"</p>
-        </div>
-      )}
-    </div>
-  );
-
-  const PATTERN_LABELS = {
-    relapse_risk:       { label:"Return needed",      color:"#EF4444", bg:"#FEF2F2", icon:"⚠️" },
-    strong_consistency: { label:"Strong consistency", color:"#10B981", bg:"#ECFDF5", icon:"💪" },
-    weekend_drop:       { label:"Weekend pattern",    color:"#F59E0B", bg:"#FFFBEB", icon:"📅" },
-    pillar_neglect:     { label:"Pillar neglect",     color:"#8B5CF6", bg:"#F5F3FF", icon:"🎯" },
-    all_or_nothing:     { label:"All-or-nothing",     color:"#EC4899", bg:"#FDF2F8", icon:"🔄" },
-  };
-
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      {/* Streak */}
-      <div style={S.card}>
-        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Streak Analysis</div>
-        <div style={{display:"flex",gap:12}}>
-          {[
-            {label:"Current",value:analytics.streak?.currentStreak||0,color:"#10B981"},
-            {label:"Longest",value:analytics.streak?.longestStreak||0,color:"#8B5CF6"},
-            {label:"Total Days",value:analytics.streak?.totalDays||0,color:"#F59E0B"},
-          ].map(item=>(
-            <div key={item.label} style={{flex:1,textAlign:"center",background:"#f8f8f8",borderRadius:14,padding:"14px 8px"}}>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:item.color,lineHeight:1}}>{item.value}</div>
-              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginTop:4,textTransform:"uppercase",letterSpacing:1}}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Consistency scores */}
-      {Object.keys(analytics.consistency||{}).length > 0 && (
-        <div style={S.card}>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>7-Day Consistency</div>
-          {Object.entries(analytics.consistency).map(([pillar,data])=>{
-            const PILLARS_MAP = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
-            const colors = {fuel:"#F59E0B",move:"#10B981",rest:"#8B5CF6",calm:"#0EA5E9",connect:"#EC4899",focus:"#F97316"};
-            return (
-              <div key={pillar} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <span style={{fontSize:16,width:20}}>{PILLARS_MAP[pillar]}</span>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,fontWeight:600,color:"#333",textTransform:"capitalize"}}>{pillar}</span>
-                    <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:colors[pillar],fontWeight:600}}>{data.label}</span>
-                  </div>
-                  <div style={{background:"#f0f0f0",borderRadius:4,height:6,overflow:"hidden"}}>
-                    <div style={{height:"100%",borderRadius:4,background:colors[pillar]||"#10B981",width:`${data.score}%`,transition:"width 0.6s ease"}}/>
-                  </div>
-                </div>
-                <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#aaa",width:32,textAlign:"right"}}>{data.days}/7</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Patterns detected */}
-      {analytics.patterns?.length > 0 && (
-        <div style={S.card}>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Patterns Detected</div>
-          {analytics.patterns.map((p,i)=>{
-            const label = PATTERN_LABELS[p.type] || {label:p.type,color:"#666",bg:"#f8f8f8",icon:"📊"};
-            return (
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:12,background:label.bg,marginBottom:8,border:`1px solid ${label.color}22`}}>
-                <span style={{fontSize:18}}>{label.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600,fontSize:13,color:label.color}}>{label.label}</div>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#666",marginTop:2}}>{p.message}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Predictive Nudge */}
-      {nudge && (
-        <div style={{background:"linear-gradient(135deg,#FFF7ED,white)",borderRadius:16,padding:"16px",border:"1.5px solid #FED7AA",display:"flex",gap:12,alignItems:"flex-start"}}>
-          <span style={{fontSize:20,flexShrink:0}}>💡</span>
-          <div>
-            <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:11,color:"#F97316",letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Today's Insight</div>
-            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#374151",lineHeight:1.7}}>{nudge.text}</p>
-            <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
-              {nudge.pattern?.pillars?.map(p=>{
-                const em={fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
-                return <span key={p} style={{background:"#FFF7ED",border:"1px solid #FED7AA",borderRadius:20,padding:"2px 8px",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#F97316",fontWeight:600}}>{em[p]} {p}</span>;
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cross-pillar patterns */}
-      {crossPatterns?.patterns?.length > 0 && (
-        <div style={S.card}>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>🔗 Cross-Pillar Patterns</div>
-          {crossPatterns.patterns.map((p,i)=>{
-            const isPositive = p.severity==="positive";
-            return (
-              <div key={i} style={{padding:"12px 14px",borderRadius:14,background:isPositive?"#ECFDF5":"#FFFBEB",border:`1px solid ${isPositive?"#A7F3D0":"#FDE68A"}`,marginBottom:8}}>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:isPositive?"#065F46":"#92400E",marginBottom:4}}>
-                  {p.icon} {p.title}
-                </div>
-                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555",lineHeight:1.6,marginBottom:6}}>{p.message}</div>
-                {p.actionable&&<div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:isPositive?"#10B981":"#F59E0B",fontWeight:600}}>→ {p.suggestion}</div>}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── CROSS-PILLAR TRENDS (AI) ── */}
-      {(trendsLoading || trends) && (
-        <div style={S.card}>
-          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>📈 How Your Pillars Connect</div>
-          {trendsLoading ? (
-            <div style={{textAlign:"center",padding:"16px 0",color:"#aaa",fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13}}>🧠 Analysing your patterns...</div>
-          ) : trends?.hasData ? (
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {/* Trend directions */}
-              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-                {Object.entries(trends.trends||{}).map(([pid,t])=>{
-                  const EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
-                  const NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
-                  const color = t.direction.includes("rising") ? "#10B981" : t.direction.includes("dropping") ? "#EF4444" : "#888";
-                  return (
-                    <div key={pid} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:20,background:color+"15",border:`1px solid ${color}33`}}>
-                      <span style={{fontSize:12}}>{EMOJIS[pid]}</span>
-                      <span style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color,fontWeight:600}}>{NAMES[pid]} {t.direction}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Correlated pillars */}
-              {(trends.correlations||[]).length > 0 && (
-                <div style={{padding:"10px 12px",borderRadius:12,background:"linear-gradient(135deg,#EFF6FF,white)",border:"1px solid #BAE6FD"}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#0EA5E9",marginBottom:6}}>🔗 These pillars move together</div>
-                  {trends.correlations.map((c,i)=>{
-                    const EMOJIS = {fuel:"⚡",move:"💪",rest:"😴",calm:"🧘",connect:"🤝",focus:"🎯"};
-                    const NAMES = {fuel:"Fuel",move:"Move",rest:"Rest",calm:"Calm",connect:"Connect",focus:"Focus"};
-                    return (
-                      <div key={i} style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#333",marginBottom:2}}>
-                        {EMOJIS[c.p1]} {NAMES[c.p1]} + {EMOJIS[c.p2]} {NAMES[c.p2]} — connected {c.strength}% of weeks
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {/* AI narrative */}
-              {trends.narrative && (
-                <div style={{padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,#F5F3FF,white)",border:"1px solid #DDD6FE"}}>
-                  <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#8B5CF6",marginBottom:6}}>🧠 What CoreSix sees</div>
-                  <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#333",lineHeight:1.7}}>{trends.narrative}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.6,fontStyle:"italic"}}>
-              Complete 2+ weekly check-ins to see how your pillars connect and affect each other.
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Pillar ripple effect */}
-      {crossPatterns?.ripple && (
-        <PillarRipple ripple={crossPatterns.ripple} S={S}/>
-      )}
-
-      {/* AI Insight */}
-      <div style={{...S.card,border:"1.5px solid #DDD6FE",background:"linear-gradient(135deg,#F5F3FF,white)"}}>
-        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#6D28D9",letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>🤖 AI Coach Insight</div>
-        {insight ? (
-          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:14,color:"#374151",lineHeight:1.75,fontStyle:"italic"}}>"{insight}"</p>
-        ) : (
-          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",lineHeight:1.6,marginBottom:12}}>Get a personalised insight based on your patterns — not generic advice.</p>
-        )}
-        <button onClick={getInsight} disabled={insightLoading}
-          style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 6px 20px #8B5CF644"),marginTop:12,opacity:insightLoading?0.7:1}}>
-          {insightLoading ? "Thinking..." : insight ? "Get New Insight" : "Generate My Insight →"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const [st, setSt]       = useState(()=>loadState()||initState());
@@ -3953,23 +3674,9 @@ export default function App() {
     setTimeout(loadWarnings, 2000); // Load after app is ready
   },[]);
 
-  const fetchCrossPatterns = async () => {
-    const id = localStorage.getItem("coresix_device_id");
-    if (!id) return null;
-    return await api("GET", `/api/cross-patterns/${id}`);
-  };
 
-  const fetchPredictiveNudge = async () => {
-    const id = localStorage.getItem("coresix_device_id");
-    if (!id) return null;
-    return await api("POST", "/api/predictive-nudge", {
-      deviceId: id,
-      currentPillarData: {
-        fuel: st.fuel, move: st.move, rest: st.rest,
-        calm: st.calm, connect: st.connect, focus: st.focus,
-      }
-    });
-  };
+
+
 
   // Clean habit display — strips [reason: ...] tag for UI display
   const displayHabit = (habit) => habit ? habit.split('[reason:')[0].trim() : habit;
@@ -4058,11 +3765,7 @@ export default function App() {
     return await api("POST", "/api/weekly-report", { deviceId: id, weekData });
   };
 
-  const fetchAnalytics = async () => {
-    const id = localStorage.getItem("coresix_device_id");
-    if (!id) return null;
-    return await api("GET", `/api/analytics/${id}`);
-  };
+
 
   const showToast = (message, color="#10B981", duration=3000) => {
     setToast({message, color});
@@ -5292,7 +4995,7 @@ export default function App() {
             </div>
 
             <div style={{display:"flex",gap:10}}>
-              <button className="tap" onClick={()=>goTo("dashboard")} style={{...S.btnGhost,flex:3}}>View Dashboard</button>
+
               <button className="tap" onClick={()=>goTo("settings")} style={{...S.btnGhost,flex:1,fontSize:18,padding:"14px 10px"}}>⚙️</button>
             </div>
           </div>
@@ -5406,16 +5109,7 @@ export default function App() {
           );
         })}
 
-        {/* ── DASHBOARD (Brain) ── */}
-        {st.screen==="dashboard"&&(
-          <div className="fu" style={S.page}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-              <button onClick={()=>goTo("habits")} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",padding:4}}>←</button>
-              <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:24,color:"#0a0a0a",letterSpacing:-0.5}}>Your Intelligence</div>
-            </div>
-            <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} impactHistory={st.impactHistory||[]} ladder={st.ladder||{}} scores={st.scores||{}} />
-          </div>
-        )}
+
         {/* ── WEEKLY SUMMARY ── */}
         {st.screen==="weekly_summary"&&(
           <div className="fu" style={S.page}>
