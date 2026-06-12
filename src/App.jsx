@@ -3535,14 +3535,23 @@ function BrainPanel({ deviceId, fetchAnalytics, fetchAIInsight, fetchCrossPatter
 
   if (!analytics) return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{...S.card,textAlign:"center",padding:"28px"}}>
-        <div style={{fontSize:36,marginBottom:12}}>🧠</div>
-        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#555",fontSize:14,lineHeight:1.7,marginBottom:12}}>
-          Complete some habits first to unlock pattern analysis and AI insights.
-        </p>
-        <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",color:"#aaa",fontSize:12,lineHeight:1.6}}>
-          The brain analyses your patterns after you check in a few times.
-        </p>
+      {/* Local summary using props data */}
+      <div style={{...S.card}}>
+        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>Your pillars at a glance</div>
+        {Object.entries(ladder||{}).filter(([pid,l])=>l && (l.rung||0) > 0 || (l.habits||[]).some(h=>h.mastered)).slice(0,3).map(([pid,l])=>{
+          const PNAMES = {fuel:"⚡ Fuel",move:"💪 Move",rest:"😴 Rest",calm:"🧘 Calm",connect:"🤝 Connect",focus:"🎯 Focus"};
+          const mastered = (l.habits||[]).filter(h=>h.mastered).length;
+          const rung = (l.rung||0)+1;
+          return (
+            <div key={pid} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #f5f5f5"}}>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,fontWeight:600,color:"#0a0a0a"}}>{PNAMES[pid]||pid}</div>
+              <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"#aaa"}}>Rung {rung}/5 · {mastered} mastered</div>
+            </div>
+          );
+        })}
+        {Object.values(ladder||{}).every(l=>!l||(l.rung||0)===0) && (
+          <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:13,color:"#aaa",textAlign:"center",padding:"12px 0"}}>Keep building your habits — insights unlock after a few check-ins.</p>
+        )}
       </div>
       <button onClick={getInsight} disabled={insightLoading}
         style={{...S.btn("linear-gradient(135deg,#8B5CF6,#A78BFA)","0 6px 20px #8B5CF644"),opacity:insightLoading?0.7:1}}>
@@ -5132,7 +5141,7 @@ export default function App() {
                           const minDays = [7,14,21,30][ladder.rung]||7;
                           const pct = Math.min(100, Math.round((ladder.days/minDays)*100));
                           const canUnlock = ladder.days >= minDays;
-                          return `Rung ${ladder.rung+1}/5 · ${ladder.days}/${minDays} days${canUnlock?" · 🔓 Ready!":""}`;
+                          return `Rung ${ladder.rung+1}/5 · ${Math.min(ladder.days, minDays)}/${minDays} days${canUnlock?" · 🔓 Ready!":""}`;
                         })()}
                       </div>
                       </div>
