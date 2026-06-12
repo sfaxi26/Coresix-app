@@ -3860,6 +3860,7 @@ export default function App() {
         setTimeout(() => fetchMicroChallenge(pid), 300 + i * 200);
       }
     });
+  },[st.screen]);
 
   // Check if person has been on same pillars for 4+ weeks
   useEffect(()=>{
