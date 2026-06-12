@@ -5416,7 +5416,6 @@ export default function App() {
             <BrainPanel deviceId={DEVICE_ID} fetchAnalytics={fetchAnalytics} fetchAIInsight={fetchAIInsight} fetchCrossPatterns={fetchCrossPatterns} fetchPredictiveNudge={fetchPredictiveNudge} S={S} impactHistory={st.impactHistory||[]} ladder={st.ladder||{}} scores={st.scores||{}} />
           </div>
         )}
-
         {/* ── WEEKLY SUMMARY ── */}
         {st.screen==="weekly_summary"&&(
           <div className="fu" style={S.page}>
