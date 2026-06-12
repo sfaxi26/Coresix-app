@@ -3854,7 +3854,7 @@ export default function App() {
   return (
     <div style={{minHeight:"100vh",background:"#F7F6F3",fontFamily:"Plus Jakarta Sans,sans-serif",position:"relative",overflow:"hidden"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,800;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        /* Fonts loaded via preconnect in index.html */
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
         body{background:#FAFAF8;overscroll-behavior:none}
         @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
@@ -5000,7 +5000,7 @@ export default function App() {
                     <p style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",marginTop:4}}>— {quote.author}</p>
                   </div>
                   <button className="tap" onClick={()=>goTo("habits")} style={S.btn()}>Start Next Week →</button>
-                  <button className="tap" onClick={()=>goTo("dashboard")} style={S.btnGhost}>View Brain Tab</button>
+
                 </div>
               );
             })()}
@@ -5009,17 +5009,17 @@ export default function App() {
 
         {/* ── NEXT WEEK PLAN ── */}
         {st.screen==="next_week_plan"&&(
-          <NextWeekPlan st={st} goBack={()=>goTo("dashboard")} S={S}/>
+          <NextWeekPlan st={st} goBack={()=>goTo("habits")} S={S}/>
         )}
 
         {/* ── MONTHLY LETTER ── */}
         {st.screen==="monthly_letter"&&(
-          <MonthlyLetter st={st} goBack={()=>goTo("dashboard")} S={S}/>
+          <MonthlyLetter st={st} goBack={()=>goTo("habits")} S={S}/>
         )}
 
         {/* ── WEEKLY REPORT ── */}
         {st.screen==="weekly_report_full"&&(
-          <WeeklyReport st={st} goBack={()=>goTo("dashboard")} fetchWeeklyReport={fetchWeeklyReport} S={S}/>
+          <WeeklyReport st={st} goBack={()=>goTo("habits")} fetchWeeklyReport={fetchWeeklyReport} S={S}/>
         )}
 
         {/* ── FOCUS LAYER ── */}
