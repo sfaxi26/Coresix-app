@@ -2876,6 +2876,28 @@ function WeeklyReport({ st, goBack, fetchWeeklyReport, S }) {
             <button onClick={goBack} style={S.btn()}>← Back to Dashboard</button>
           </div>
         )}
+      {/* ── BOTTOM NAV ── */}
+      {['habits','stats','explore','settings'].includes(st.screen) && (
+        <nav className="bnav">
+          {[
+            {screen:"habits", icon:"🏠", label:"Today"},
+            {screen:"stats",  icon:"📊", label:"Stats"},
+            {screen:"explore",icon:"💡", label:"Learn"},
+            {screen:"settings",icon:"⚙️",label:"More"},
+          ].map(tab=>{
+            const isActive = st.screen === tab.screen;
+            return (
+              <button key={tab.screen} className={`bnt${isActive?" active":""}`}
+                onClick={()=>goTo(tab.screen)}
+                style={{color: isActive ? "#10B981" : "#aaa"}}>
+                <span className="bnt-icon">{tab.icon}</span>
+                <span className="bnt-label">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       </div>
     </div>
   );
@@ -3032,6 +3054,28 @@ function MonthlyLetter({ st, goBack, S }) {
             <button onClick={goBack} style={S.btn()}>← Back to Dashboard</button>
           </div>
         )}
+      {/* ── BOTTOM NAV ── */}
+      {['habits','stats','explore','settings'].includes(st.screen) && (
+        <nav className="bnav">
+          {[
+            {screen:"habits", icon:"🏠", label:"Today"},
+            {screen:"stats",  icon:"📊", label:"Stats"},
+            {screen:"explore",icon:"💡", label:"Learn"},
+            {screen:"settings",icon:"⚙️",label:"More"},
+          ].map(tab=>{
+            const isActive = st.screen === tab.screen;
+            return (
+              <button key={tab.screen} className={`bnt${isActive?" active":""}`}
+                onClick={()=>goTo(tab.screen)}
+                style={{color: isActive ? "#10B981" : "#aaa"}}>
+                <span className="bnt-icon">{tab.icon}</span>
+                <span className="bnt-label">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       </div>
     </div>
   );
@@ -3286,6 +3330,28 @@ function NextWeekPlan({ st, goBack, S }) {
             <button onClick={goBack} style={S.btn()}>← Back to Dashboard</button>
           </div>
         )}
+      {/* ── BOTTOM NAV ── */}
+      {['habits','stats','explore','settings'].includes(st.screen) && (
+        <nav className="bnav">
+          {[
+            {screen:"habits", icon:"🏠", label:"Today"},
+            {screen:"stats",  icon:"📊", label:"Stats"},
+            {screen:"explore",icon:"💡", label:"Learn"},
+            {screen:"settings",icon:"⚙️",label:"More"},
+          ].map(tab=>{
+            const isActive = st.screen === tab.screen;
+            return (
+              <button key={tab.screen} className={`bnt${isActive?" active":""}`}
+                onClick={()=>goTo(tab.screen)}
+                style={{color: isActive ? "#10B981" : "#aaa"}}>
+                <span className="bnt-icon">{tab.icon}</span>
+                <span className="bnt-label">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
       </div>
     </div>
   );
@@ -3866,6 +3932,11 @@ export default function App() {
         @keyframes checkPop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
         .fu{animation:fadeUp 0.45s cubic-bezier(0.16,1,0.3,1) both}
         .tap:active{transform:scale(0.96)!important}
+        .bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-top:1px solid #f0f0f0;display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:200;box-shadow:0 -4px 24px rgba(0,0,0,0.06);}
+        .bnt{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:6px 0;border:none;background:none;-webkit-tap-highlight-color:transparent;}
+        .bnt-icon{font-size:22px;line-height:1;transition:transform 0.2s;}
+        .bnt-label{font-family:"Plus Jakarta Sans",sans-serif;font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;transition:color 0.2s;}
+        .bnt.active .bnt-icon{transform:scale(1.1);}
         input:focus{outline:none;border-color:#10B981!important;box-shadow:0 0 0 3px #10B98118!important}
         textarea:focus{outline:none;border-color:#10B981!important}
         ::-webkit-scrollbar{width:0}
@@ -4579,7 +4650,7 @@ export default function App() {
 
         {/* ── HABITS ── */}
         {st.screen==="habits"&&(
-          <div className="fu" style={S.page}>
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
             {/* Header — redesigned */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2}}>
               <div style={{flex:1}}>
@@ -4821,10 +4892,7 @@ export default function App() {
               })}
             </div>
 
-            <div style={{display:"flex",gap:10}}>
-
-              <button className="tap" onClick={()=>goTo("settings")} style={{...S.btnGhost,flex:1,fontSize:18,padding:"14px 10px"}}>⚙️</button>
-            </div>
+            <div style={{height:10}}/>
           </div>
         )}
 
@@ -5088,6 +5156,100 @@ export default function App() {
           </div>
         )}
 
+        {/* ── STATS ── */}
+        {st.screen==="stats"&&(
+          <div className="fu" style={{...S.page,paddingBottom:90}}>
+            {(()=>{
+              const activePids = st.selectedPillars || getWeakest3();
+              const totalMastered = activePids.reduce((sum,pid)=>sum+(st.ladder?.[pid]?.habits||[]).filter(h=>h.mastered).length,0);
+              const thisWeek = (st.history||[]).slice(-7).length;
+              const weekPct = activePids.length > 0 ? Math.round((thisWeek/(activePids.length*7))*100) : 0;
+              const bestPid = activePids.reduce((best,pid)=>{
+                const d=(st.history||[]).filter(h=>h.pillars?.includes(pid)).slice(-7).length;
+                const bd=(st.history||[]).filter(h=>h.pillars?.includes(best)).slice(-7).length;
+                return d>bd?pid:best;
+              }, activePids[0]);
+              return (
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  {/* Title */}
+                  <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0a0a0a",letterSpacing:-1,paddingTop:8}}>Your Progress</div>
+
+                  {/* Hero stats */}
+                  <div style={{background:"#0a0a0a",borderRadius:24,padding:"24px 20px"}}>
+                    <div style={{display:"flex",justifyContent:"space-around"}}>
+                      {[
+                        {val: st.streak||0, label:"Day Streak", icon:"🔥"},
+                        {val: weekPct+"%", label:"This Week", icon:"📈"},
+                        {val: totalMastered, label:"Mastered", icon:"⭐"},
+                      ].map((s,i)=>(
+                        <div key={i} style={{textAlign:"center"}}>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{s.icon}</div>
+                          <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:36,color:"white",lineHeight:1}}>{s.val}</div>
+                          <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"rgba(255,255,255,0.35)",letterSpacing:1.2,textTransform:"uppercase",marginTop:4}}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pillar bars */}
+                  <div style={S.card}>
+                    <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:11,fontWeight:700,color:"#aaa",letterSpacing:1.5,textTransform:"uppercase",marginBottom:14}}>This week</div>
+                    {activePids.map(pid=>{
+                      const p = PILLARS[pid];
+                      const days = (st.history||[]).filter(h=>h.pillars?.includes(pid)).slice(-7).length;
+                      const pct = Math.round((days/7)*100);
+                      const rung = (st.ladder?.[pid]?.rung||0)+1;
+                      const mastered = (st.ladder?.[pid]?.habits||[]).filter(h=>h.mastered).length;
+                      return (
+                        <div key={pid} style={{marginBottom:16}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{width:30,height:30,borderRadius:8,background:p.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{p.emoji}</div>
+                              <div>
+                                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:700,fontSize:13,color:"#0a0a0a"}}>{p.name}</div>
+                                <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa"}}>Rung {rung}/5 · {mastered}/3 mastered</div>
+                              </div>
+                            </div>
+                            <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:16,color:p.color}}>{days}/7</div>
+                          </div>
+                          <div style={{height:6,borderRadius:99,background:"#f0f0f0",overflow:"hidden"}}>
+                            <div style={{height:"100%",borderRadius:99,background:p.grad,width:`${pct}%`,transition:"width 0.6s ease"}}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Best pillar */}
+                  {bestPid && PILLARS[bestPid] && (()=>{
+                    const bp = PILLARS[bestPid];
+                    const days = (st.history||[]).filter(h=>h.pillars?.includes(bestPid)).slice(-7).length;
+                    return (
+                      <div style={{...S.card,background:bp.light,border:`1.5px solid ${bp.border}`}}>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,fontWeight:700,color:bp.color,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>🏆 Strongest this week</div>
+                        <div style={{fontFamily:"Fraunces,serif",fontWeight:700,fontSize:18,color:"#0a0a0a",marginBottom:2}}>{bp.emoji} {bp.name}</div>
+                        <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:12,color:"#555"}}>{days} out of 7 days — your most consistent pillar</div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* All time */}
+                  <div style={{display:"flex",gap:10}}>
+                    <div style={{...S.card,flex:1,textAlign:"center"}}>
+                      <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0a0a0a"}}>{(st.history||[]).length}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Total check-ins</div>
+                    </div>
+                    <div style={{...S.card,flex:1,textAlign:"center"}}>
+                      <div style={{fontFamily:"Fraunces,serif",fontWeight:900,fontSize:28,color:"#0a0a0a"}}>{Math.floor((st.streak||0)/7)}</div>
+                      <div style={{fontFamily:"Plus Jakarta Sans,sans-serif",fontSize:10,color:"#aaa",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Weeks complete</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ── EXPLORE ── */}
         {st.screen==="explore"&&(
           <div className="fu" style={{...S.page,paddingBottom:90}}>
@@ -5221,6 +5383,28 @@ export default function App() {
             </div>
           </div>
         )}
+
+      {/* ── BOTTOM NAV ── */}
+      {['habits','stats','explore','settings'].includes(st.screen) && (
+        <nav className="bnav">
+          {[
+            {screen:"habits", icon:"🏠", label:"Today"},
+            {screen:"stats",  icon:"📊", label:"Stats"},
+            {screen:"explore",icon:"💡", label:"Learn"},
+            {screen:"settings",icon:"⚙️",label:"More"},
+          ].map(tab=>{
+            const isActive = st.screen === tab.screen;
+            return (
+              <button key={tab.screen} className={`bnt${isActive?" active":""}`}
+                onClick={()=>goTo(tab.screen)}
+                style={{color: isActive ? "#10B981" : "#aaa"}}>
+                <span className="bnt-icon">{tab.icon}</span>
+                <span className="bnt-label">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       </div>
     </div>
